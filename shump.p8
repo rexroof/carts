@@ -10,13 +10,17 @@ function _init()
  bullet={ pix=16,x=64,y=-10,show=0,life=60,sx=0,sy=0 }
  flamespr=5
  muzzle=0
- score=10000
+ score=flr(rnd(10000))
+ stars=starfield()
  lifes=3
  maxlifes=4
 end
 
 function _draw()
  cls(0)
+ for s in all (stars) do
+   pset(s[1],s[2],7)
+ end
  -- spr(ship.pix,ship.w,ship.h)
  if(bullet.show == 1) spr(bullet.pix,bullet.x,bullet.y)
  if(ship.show == 1) spr(ship.pix,ship.x,ship.y)
@@ -29,11 +33,10 @@ function _draw()
  print(scorestring,64-#scorestring*2,1,12)
 
  for i=1,maxlifes do
-   y=i*9
    if (lifes>=i) then
-     spr(heart.pix,y-9,1)
+     spr(heart.pix,i*9-9,1)
    else
-     spr(emptyheart.pix,y-9,1)
+     spr(emptyheart.pix,i*9-9,1)
    end
  end
 end
@@ -98,6 +101,34 @@ function _update()
  if(muzzle>0) muzzle=muzzle-1
 
 end
+-->8
+function starfield()
+ field={}
+ for i=1,20 do
+   -- pset(i,i,7)
+   add(field, { flr(rnd(128)), flr(rnd(128)) } )
+ end
+ return field
+end
+function random_starstream()
+ x=10
+ y=10
+ for i=1,100 do
+   x+=rnd(10)
+   y+=rnd(10)
+   -- set one pixel
+   pset(x,y,7)
+ end
+end
+-->8
+function rexroof()
+ print("rexroof")
+end
+-->8
+function lazydevs()
+ print("lazydevs")
+end
+
 __gfx__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000099009900990099000000000
 00000000000cc000000cc000000cc000000000000ccaccc0000ca000000cc000000cc00000000000000000000000000000000000911991199999999900000000

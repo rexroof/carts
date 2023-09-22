@@ -20,9 +20,17 @@ end
 function _draw()
  cls(0)
  framecount += 1
+
  for s in all (stars) do
-   pset(s[1],s[2], flr(rnd(3)+5) )
+   local color=6
+
+   if (s[3] < 1.5) color=13
+   if (s[3] < 1) color=1
+
+   -- pset(s[1],s[2], flr(rnd(3)+5) )
+   pset(s[1],s[2],color)
  end
+
  if(bullet.show == 1) spr(bullet.pix,bullet.x,bullet.y)
  if(ship.show == 1) spr(ship.pix,ship.x,ship.y)
  if(heart.show == 1) spr(heart.pix,heart.x,heart.y)
@@ -109,17 +117,17 @@ end  -- end _update
 -->8
 function starfield()
  field={}
- for i=1,30 do
-   -- pset(i,i,7)
-   add(field, { flr(rnd(128)), flr(rnd(128)) } )
+ for i=1,50 do
+      -- x, y, speed
+   add(field, { flr(rnd(128)), flr(rnd(128)), rnd(2)+0.2 } )
  end
  return field
 end
 
 function animatestars(stars)
    for s in all (stars) do
-     s[2]+=1
-     if (s[2]>127) s[2]=1
+     s[2]+=s[3]
+     if (s[2]>127) s[2]-=127
    end
    return stars
 end

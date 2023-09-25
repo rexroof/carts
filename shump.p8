@@ -3,7 +3,33 @@ version 41
 __lua__
 function _init()
  cls(0)
+ framecount=0
+ mode="start"
+end
 
+function _draw()
+  if (mode == "game") draw_game()
+  if (mode == "start") draw_start()
+  if (mode == "over") draw_over()
+end -- _draw
+
+function _update()
+  if (mode == "game") update_game()
+  if (mode == "start") update_start()
+  if (mode == "over") update_over()
+end  -- end _update
+-->8
+function starfield()
+ field={}
+ for i=1,50 do
+      -- x, y, speed
+   add(field, { flr(rnd(128)), flr(rnd(128)), rnd(2)+0.2 } )
+ end
+ return field
+end
+
+function startgame()
+ mode="game"
  heart={ pix=14,x=1,y=1,show=0 }
  emptyheart={ pix=13,x=10,y=1,show=0 }
  ship={ pix=2,x=64,y=64,show=1,sx=0,sy=0 }
@@ -14,43 +40,37 @@ function _init()
  stars=starfield()
  lifes=3
  maxlifes=4
- framecount=0
 end
 
-function _draw()
- cls(0)
- framecount += 1
-
- for s in all (stars) do
-   local color=6
-
-   if (s[3] < 1.5) color=13
-   if (s[3] < 1) color=1
-
-   -- pset(s[1],s[2], flr(rnd(3)+5) )
-   pset(s[1],s[2],color)
- end
-
- if(bullet.show == 1) spr(bullet.pix,bullet.x,bullet.y)
- if(ship.show == 1) spr(ship.pix,ship.x,ship.y)
- if(heart.show == 1) spr(heart.pix,heart.x,heart.y)
- if(emptyheart.show == 1) spr(emptyheart.pix,emptyheart.x,emptyheart.y)
- spr(flamespr,ship.x,ship.y+6)
- if(muzzle>0) circfill(ship.x+3,ship.y, muzzle, 7)
-
- local scorestring=("score: "..score)
- print(scorestring,64-#scorestring*2,1,12)
-
- for i=1,maxlifes do
-   if (lifes>=i) then
-     spr(heart.pix,i*9-9,1)
-   else
-     spr(emptyheart.pix,i*9-9,1)
+function animatestars(stars)
+   for s in all (stars) do
+     s[2]+=s[3]
+     if (s[2]>127) s[2]-=127
    end
+   return stars
+end
+
+function random_starstream()
+ x=10
+ y=10
+ for i=1,100 do
+   x+=rnd(10)
+   y+=rnd(10)
+   -- set one pixel
+   pset(x,y,7)
  end
 end
 
-function _update()
+function update_start()
+ if (btnp(4) or btnp(5)) startgame()
+end
+
+function update_over()
+ if (btnp(4) or btnp(5)) mode="start"
+end
+
+--8
+function update_game()
  -- ship.x=ship.x + rnd(6) - 3
  -- ship.y=ship.y + rnd(6) - 3
  if(ship.x > 125) ship.x=120
@@ -90,6 +110,10 @@ function _update()
    ship.sy=2
  end
 
+ if btnp(4) then
+   mode="over"
+ end
+
  if btnp(5) then
    bullet.show=1
    bullet.x=ship.x
@@ -113,44 +137,63 @@ function _update()
    stars=animatestars(stars)
  end
 
-end  -- end _update
--->8
-function starfield()
- field={}
- for i=1,50 do
-      -- x, y, speed
-   add(field, { flr(rnd(128)), flr(rnd(128)), rnd(2)+0.2 } )
- end
- return field
-end
+end -- update_game
 
-function animatestars(stars)
-   for s in all (stars) do
-     s[2]+=s[3]
-     if (s[2]>127) s[2]-=127
+-->8
+function draw_game()
+ cls(0)
+ framecount += 1
+
+ for s in all (stars) do
+   -- default color is light grey
+   local color=6
+
+   -- somewhat slow stars are grey
+   if (s[3] < 1.5) color=13
+   -- slowest stars are dark blue
+   if (s[3] < 1) color=1
+
+   -- super fast stars are a streak
+   if (s[3] > 1.9) then
+    line(s[1],s[2],s[1],s[2]-4,color)
+   -- fast-ish stars flicker
+   elseif (s[3] > 1.5) then
+    pset(s[1],s[2],rnd(3)+5)
+   else
+    pset(s[1],s[2],color)
    end
-   return stars
-end
-
-function random_starstream()
- x=10
- y=10
- for i=1,100 do
-   x+=rnd(10)
-   y+=rnd(10)
-   -- set one pixel
-   pset(x,y,7)
+   -- pset(s[1],s[2], flr(rnd(3)+5) )
  end
+
+ if(bullet.show == 1) spr(bullet.pix,bullet.x,bullet.y)
+ if(ship.show == 1) spr(ship.pix,ship.x,ship.y)
+ if(heart.show == 1) spr(heart.pix,heart.x,heart.y)
+ if(emptyheart.show == 1) spr(emptyheart.pix,emptyheart.x,emptyheart.y)
+ spr(flamespr,ship.x,ship.y+6)
+ if(muzzle>0) circfill(ship.x+3,ship.y, muzzle, 7)
+
+ local scorestring=("score: "..score)
+ print(scorestring,64-#scorestring*2,1,12)
+
+ for i=1,maxlifes do
+   if (lifes>=i) then
+     spr(heart.pix,i*9-9,1)
+   else
+     spr(emptyheart.pix,i*9-9,1)
+   end
+ end
+end -- draw_game
+
+function draw_start()
+ cls(1)
+ local startstring="rexroof games shump"
+ print(startstring,64-#startstring*2,60,12)
 end
 
--->8
-function rexroof()
- print("rexroof")
-end
-
--->8
-function lazydevs()
- print("lazydevs")
+function draw_over()
+ cls(1)
+ local overstring="game over"
+ print(overstring,64-#overstring*2,60,8)
 end
 
 __gfx__

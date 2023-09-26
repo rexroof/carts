@@ -1,9 +1,11 @@
 pico-8 cartridge // http://www.pico-8.com
 version 41
 __lua__
+-- main
 function _init()
  cls(0)
  framecount=0
+ blink_timer=0
  mode="start"
 end
 
@@ -14,11 +16,25 @@ function _draw()
 end -- _draw
 
 function _update()
+  blink_timer += 1
+  framecount += 1
   if (mode == "game") update_game()
   if (mode == "start") update_start()
   if (mode == "over") update_over()
 end  -- end _update
 -->8
+-- tools
+
+function print_center(string, y, color)
+ print(string,64-#string*2,y,color)
+end
+
+function blink()
+ local c={5,5,5,5,5,5,6,6,7,7,6,6,5,5}
+ if (blink_timer>#c) blink_timer=1
+ return c[blink_timer]
+end
+
 function starfield()
  field={}
  for i=1,50 do
@@ -66,7 +82,10 @@ function update_start()
 end
 
 function update_over()
- if (btnp(4) or btnp(5)) mode="start"
+ if (btnp(4) or btnp(5)) then
+   -- mode="start"
+   print("button press")
+ end
 end
 
 --8
@@ -140,10 +159,9 @@ function update_game()
 end -- update_game
 
 -->8
+-- draw
 function draw_game()
  cls(0)
- framecount += 1
-
  for s in all (stars) do
    -- default color is light grey
    local color=6
@@ -172,8 +190,7 @@ function draw_game()
  spr(flamespr,ship.x,ship.y+6)
  if(muzzle>0) circfill(ship.x+3,ship.y, muzzle, 7)
 
- local scorestring=("score: "..score)
- print(scorestring,64-#scorestring*2,1,12)
+ print_center("score: "..score)
 
  for i=1,maxlifes do
    if (lifes>=i) then
@@ -186,14 +203,12 @@ end -- draw_game
 
 function draw_start()
  cls(1)
- local startstring="rexroof games shump"
- print(startstring,64-#startstring*2,60,12)
+ print_center("rexroof games shump", 60, blink())
 end
 
 function draw_over()
  cls(1)
- local overstring="game over"
- print(overstring,64-#overstring*2,60,8)
+ print_center("game over", 60,8)
 end
 
 __gfx__

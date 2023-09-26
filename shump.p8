@@ -140,7 +140,7 @@ function update_game()
  for b in all (bullets) do
   b.y=b.y-b.spd
 
-  if b.y < 0 then
+  if b.y < -10 then
     del(bullets, b)
   end
  end

@@ -27,6 +27,26 @@ end  -- end _update
 -->8
 -- tools
 
+function new_wave(wave_size)
+ for i=1,wave_size do
+   local n = new_enemy()
+   n.x = flr(rnd(12)*10)
+   n.y = flr(rnd(5)*8)
+   add(enemies,n)
+ end
+end
+
+function collide(a,b)
+ -- collision math
+ if ((abs(a.x-b.x)>8) or (abs(a.y-b.y)>8)) then
+  return false
+ else
+  return true
+ end
+
+ return false
+end
+
 function draw_junk(objs)
  for o in all (objs) do
    sprite=o.pix
@@ -75,12 +95,8 @@ function startgame()
  -- different types of enemies. new animation
  -- new property to enemies?  speed?  movement?
 
- for i=1,10 do
-   local n = new_enemy()
-   n.x = flr(rnd(12)*10)
-   n.y = flr(rnd(5)*8)
-   add(enemies,n)
- end
+ wave_size=10
+ new_wave(wave_size)
 end
 
 function animatestars(stars)
@@ -107,9 +123,9 @@ function update_start()
 end
 
 function update_over()
- if (btnp(4) or btnp(5)) then
-   -- mode="start"
-   print("button press")
+ if (btnp(4) and btnp(5)) then
+   mode="start"
+   -- print("button press")
  end
 end
 
@@ -154,7 +170,6 @@ function update_game()
 
    sfx(0)
    muzzle=5
-   score+=1
  end
 
  ship.x=ship.x+ship.sx
@@ -166,6 +181,16 @@ function update_game()
   if b.y < -10 then
     del(bullets, b)
   end
+
+  for e in all (enemies) do
+    -- if bullet hits enemy
+    if (collide(b,e)) then
+      del(enemies, e)
+      del(bullets, b)
+      score+=15
+      sfx(3)
+    end
+  end
  end
 
  for e in all (enemies) do
@@ -175,6 +200,21 @@ function update_game()
    if e.ani > 3 then
      e.ani=0
    end
+
+   -- if ship hits enemy
+   if (collide(ship,e)) then
+     lifes-=1
+     del(enemies,e)
+     sfx(1)
+   end
+
+
+   if (lifes<=0) mode="over"
+ end -- for e in enemies
+
+ if (#enemies == 0) then
+   wave_size+=10
+   new_wave(wave_size)
  end
 
  flamespr=flamespr+1
@@ -217,12 +257,9 @@ function draw_game()
  draw_junk(enemies)
 
  if(ship.show == 1) spr(ship.pix,ship.x,ship.y)
- if(heart.show == 1) spr(heart.pix,heart.x,heart.y)
- if(emptyheart.show == 1) spr(emptyheart.pix,emptyheart.x,emptyheart.y)
  spr(flamespr,ship.x,ship.y+6)
  if(muzzle>0) circfill(ship.x+3,ship.y, muzzle, 7)
 
- print_center("score: "..score)
 
  for i=1,maxlifes do
    if (lifes>=i) then
@@ -231,6 +268,10 @@ function draw_game()
      spr(emptyheart.pix,i*9-9,1)
    end
  end
+
+ print_center("score: "..score, 1, 12)
+ print(#enemies, 100,1,9)
+
 end -- draw_game
 
 function draw_start()
@@ -318,7 +359,7 @@ __gfx__
 07000070000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __sfx__
 00010000047500a7500d7501175013750157501775017750197501d7501e7502075022750247502771018000180001600016000160001600016000160001500015000150001c00021000260002d0003400039000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000100000000000000000002a1502435021150193501515014350101500b3500815007350061500615006150061500615006150081500b1500e15014150171501915000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000

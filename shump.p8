@@ -2,6 +2,14 @@ pico-8 cartridge // http://www.pico-8.com
 version 41
 __lua__
 -- main
+
+-- todo
+-- add enemy health
+-- add bullet dmg
+-- add invulnerablity frames to ship
+-- add bullet rate/timer to ship
+
+
 function _init()
  cls(0)
  framecount=0
@@ -17,8 +25,8 @@ function _draw()
 end -- _draw
 
 function _update()
-  blink_timer += 1
-  framecount += 1
+  blink_timer+=1
+  framecount+=1
   if (mode == "game") then update_game()
   elseif (mode == "start") then update_start()
   elseif (mode == "over") then update_over()
@@ -78,17 +86,20 @@ function starfield()
  return field
 end
 
-function startgame()
+function game_start()
+ framecount=0
  mode="game"
- heart={ pix=14,x=1,y=1,show=0 }
- emptyheart={ pix=13,x=10,y=1,show=0 }
- ship={ pix=2,x=64,y=64,show=1,sx=0,sy=0 }
+ heart={pix=14,x=1,y=1}
+ emptyheart={pix=13,x=10,y=1}
+ ship={ pix=2,x=64,y=64,sx=0,sy=0 }
+ invuln=0
  flamespr=5
  muzzle=0
  score=flr(rnd(10000))
  stars=starfield()
  bullets={}
- lifes=3
+ bullet_timer=0
+ lifes=4
  maxlifes=4
  enemies={}
  -- multiple enemies? one after another over time? pattern?
@@ -119,7 +130,7 @@ function random_starstream()
 end
 
 function update_start()
- if (btnp(4) or btnp(5)) startgame()
+ if (btnp(4) or btnp(5)) game_start()
 end
 
 function update_over()
@@ -164,17 +175,21 @@ function update_game()
    mode="over"
  end
 
- if btnp(5) then
-   local newbullet={pix=16,x=ship.x,y=ship.y-3,show=1,life=60,sx=0,sy=0,spd=4 }
+ if btn(5) then
+  if bullet_timer <= 0 then
+   local newbullet={pix=16,x=ship.x,y=ship.y-3,life=60,sx=0,sy=0,spd=4 }
    add(bullets,newbullet)
-
    sfx(0)
    muzzle=5
+   bullet_timer=6
+  end
  end
+ if (bullet_timer>0) bullet_timer-=1
 
  ship.x=ship.x+ship.sx
  ship.y=ship.y+ship.sy
 
+ -- cycle through all bullets
  for b in all (bullets) do
   b.y=b.y-b.spd
 
@@ -182,17 +197,19 @@ function update_game()
     del(bullets, b)
   end
 
+  -- test if bullets have hit enemies
   for e in all (enemies) do
     -- if bullet hits enemy
     if (collide(b,e)) then
       del(enemies, e)
       del(bullets, b)
       score+=15
-      sfx(3)
+      sfx(2)
     end
   end
  end
 
+ -- cycle through all enemies
  for e in all (enemies) do
    e.y+=e.spd
    if (e.y > 130) e.y=-10
@@ -201,15 +218,17 @@ function update_game()
      e.ani=0
    end
 
-   -- if ship hits enemy
-   if (collide(ship,e)) then
+   -- decrement invulnerability
+   if (invuln>0) invuln-=1
+
+   -- if this enemy has hit ship
+   if (invuln<=0) and (collide(ship,e)) then
      lifes-=1
      del(enemies,e)
      sfx(1)
+     invuln=200  -- frames of invulnerability
    end
-
-
-   if (lifes<=0) mode="over"
+   if (lifes<=0) mode="over" -- this should be a function inside ship obj?
  end -- for e in enemies
 
  if (#enemies == 0) then
@@ -256,8 +275,17 @@ function draw_game()
  draw_junk(bullets)
  draw_junk(enemies)
 
- if(ship.show == 1) spr(ship.pix,ship.x,ship.y)
- spr(flamespr,ship.x,ship.y+6)
+ if (invuln<=0) then
+  spr(ship.pix,ship.x,ship.y)
+  spr(flamespr,ship.x,ship.y+6)
+ else
+  -- blink ship while invulnerable
+  if sin(framecount/3)<0.5 then
+   spr(ship.pix,ship.x,ship.y)
+   spr(flamespr,ship.x,ship.y+6)
+  end
+ end
+
  if(muzzle>0) circfill(ship.x+3,ship.y, muzzle, 7)
 
 
@@ -360,7 +388,7 @@ __gfx__
 __sfx__
 00010000047500a7500d7501175013750157501775017750197501d7501e7502075022750247502771018000180001600016000160001600016000160001500015000150001c00021000260002d0003400039000
 000100000000000000000002a1502435021150193501515014350101500b3500815007350061500615006150061500615006150081500b1500e15014150171501915000000000000000000000000000000000000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+1a03000038650336500b6500a65033650336500b65008650056500465003650006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000

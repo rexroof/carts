@@ -8,6 +8,7 @@ __lua__
 -- add bullet dmg
 -- add invulnerablity frames to ship
 -- add bullet rate/timer to ship
+-- some ships should have charge shots?
 
 
 function _init()
@@ -175,13 +176,14 @@ function update_game()
    mode="over"
  end
 
+ -- if (btnp(5)) bullet_timer=0
  if btn(5) then
   if bullet_timer <= 0 then
    local newbullet={pix=16,x=ship.x,y=ship.y-3,life=60,sx=0,sy=0,spd=4 }
    add(bullets,newbullet)
    sfx(0)
    muzzle=5
-   bullet_timer=6
+   bullet_timer=4
   end
  end
  if (bullet_timer>0) bullet_timer-=1

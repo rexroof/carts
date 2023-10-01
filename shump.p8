@@ -3,6 +3,13 @@ version 41
 __lua__
 -- main
 
+-- homework
+  -- try adding explosions?
+    -- sprite animation?
+    -- circle fills?
+    --  rectangle fills? :D
+    -- pixel explosion based on enemy sprite?
+
 -- todo
 -- add enemy health
 -- add bullet dmg

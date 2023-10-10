@@ -66,6 +66,12 @@ end
 function draw_junk(objs)
  for o in all (objs) do
    sprite=o.pix
+
+   if (o.pal_shift != nil) then
+    for i=1,15 do
+     pal(i,(i+o.pal_shift))
+    end
+   end
    if (o.flash != nil) then
      if o.flash > 0 then
        -- manipulate pallete if we're flashing
@@ -84,14 +90,28 @@ function draw_junk(objs)
 end
 
 function new_enemy()
+ local hp=rnd(8)+1
+
  return {
    x=60, y=5,  -- position
    pix=21, -- sprite id
+   pal_shift=(hp-1), -- pallete shift based on hp
    ani=0,  -- animate sprites
    spd=1,  -- enemy speed
-   hp=5,   -- health
+   hp=hp,   -- health
    flash=0 -- hurt flash?
    }
+end
+
+function blast(x,y)
+  for i=1,50 do
+    add(particles, { x=x, y=y,
+        sx=(rnd()-0.5)*4,
+        sy=(rnd()-0.5)*4,
+        age=0,
+        maxage=rnd(30)
+        } )
+  end
 end
 
 function new_explosion(x,y)
@@ -138,7 +158,8 @@ function game_start()
  lifes=4
  maxlifes=4
  enemies={}
- explosions={}
+ -- explosions={}
+ particles={}
  -- multiple enemies? one after another over time? pattern?
  -- different types of enemies. new animation
  -- new property to enemies?  speed?  movement?
@@ -244,7 +265,8 @@ function update_game()
       sfx(3)  -- hit sound
       e.flash=3
       if e.hp <= 0 then
-       add(explosions, new_explosion(e.x-4,e.y-4))
+       -- add(explosions, new_explosion(e.x-4,e.y-4))
+       blast(e.x+4,e.y+4)
        del(enemies, e)
        score+=15
        sfx(2) -- death sound
@@ -333,10 +355,44 @@ function draw_game()
  if(muzzle>0) circfill(ship.x+3,ship.y, muzzle, 7)
 
  -- draw explosions
- for pop in all(explosions) do
-   spr(pop.sprites[flr(pop.age)], pop.x, pop.y, 2, 2)
-   pop.age+=0.4
-   if (pop.age > #pop.sprites) del(explosions,pop)
+ -- for pop in all(explosions) do
+ --   spr(pop.sprites[flr(pop.age)], pop.x, pop.y, 2, 2)
+ --   pop.age+=0.4
+ --   if (pop.age > #pop.sprites) del(explosions,pop)
+ -- end
+
+ -- draw particles
+ for p in all(particles) do
+   -- pset(p.x,p.y,14)
+   local pcolor=7
+   local psize=4
+   if (p.age>5) then
+     pcolor=10
+     psize=3
+   end
+   if (p.age>10) then
+     pcolor=9
+     psize=2
+   end
+   if (p.age>15) then
+     pcolor=8
+     psize=1
+   end
+   if (p.age>20) then
+     pcolor=2
+     psize=1
+   end
+   if (p.age>25) then
+     pcolor=5
+     psize=1
+   end
+   circfill(p.x,p.y,psize,pcolor)
+
+   -- this should probably be in update?
+   p.x+=p.sx
+   p.y+=p.sy
+   p.age+=1
+   if (p.age>p.maxage) del(particles,p)
  end
 
  for i=1,maxlifes do

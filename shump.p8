@@ -13,6 +13,8 @@ __lua__
 -- todo
 -- add enemy health
 -- add bullet dmg
+-- bullet hitbox
+-- expand objects
 -- add invulnerablity frames to ship
 -- add bullet rate/timer to ship
 -- some ships should have charge shots?
@@ -103,6 +105,7 @@ function new_enemy()
    }
 end
 
+-- add 50 particle explosion
 function blast(x,y)
   for i=1,50 do
     add(particles, { x=x, y=y,
@@ -264,6 +267,7 @@ function update_game()
       e.hp-=1
       sfx(3)  -- hit sound
       e.flash=3
+      -- if enemy is dying
       if e.hp <= 0 then
        -- add(explosions, new_explosion(e.x-4,e.y-4))
        blast(e.x+4,e.y+4)
@@ -289,6 +293,7 @@ function update_game()
 
    -- if this enemy has hit ship
    if (invuln<=0) and (collide(ship,e)) then
+     blast(ship.x,ship.y)
      lifes-=1
      del(enemies,e)
      sfx(1)

@@ -111,6 +111,21 @@ function big_shockwave(x,y)
  })
 end
 
+-- a couple sparks when we hit enemies
+function small_sparks(x,y)
+  for i=1,rnd(3) do
+    add(particles, { x=x, y=y,
+        sx=(rnd()-0.5)*8,
+        sy=(rnd()-1)*3, -- flying backwards (upwards)
+        blue=blue,
+        age=0,
+        spark=true,
+        maxage=rnd(30)
+        } )
+  end
+end
+
+
 function new_wave(wave_size)
  for i=1,wave_size do
    local n = new_enemy()
@@ -176,6 +191,7 @@ function blast(x,y,blue)
   blue = blue or false
 
   -- initial large circle
+    -- doesn't work in my version
   add(particles, { x=x, y=y,
       sx=0,
       sy=0,
@@ -185,12 +201,25 @@ function blast(x,y,blue)
       maxage=0
       } )
 
-  for i=1,50 do
+  -- circles for explosion
+  for i=1,40 do
     add(particles, { x=x, y=y,
         sx=(rnd()-0.5)*4,
         sy=(rnd()-0.5)*4,
         blue=blue,
         age=0,
+        maxage=rnd(30)
+        } )
+  end
+
+  -- these are sparks
+  for i=1,40 do
+    add(particles, { x=x, y=y,
+        sx=(rnd()-0.5)*6,
+        sy=(rnd()-0.5)*6,
+        blue=blue,
+        age=0,
+        spark=true,
         maxage=rnd(30)
         } )
   end
@@ -346,6 +375,7 @@ function update_game()
     -- if bullet hits enemy
     if (collide(b,e)) then
       small_shockwave(b.x,b.y)
+      small_sparks(e.x+4,e.y+7)
       del(bullets, b)  -- someday bullets may have health/peircing?
       e.hp-=1
       sfx(3)  -- hit sound
@@ -469,7 +499,12 @@ function draw_game()
    else
      pcolor,psize=particle_age_red(p.age)
    end
-   circfill(p.x,p.y,psize,pcolor)
+
+   if p.spark then
+    pset(p.x,p.y,7) -- sparks always white
+   else
+    circfill(p.x,p.y,psize,pcolor)
+   end
 
    -- this should probably be in update?
    p.x+=p.sx

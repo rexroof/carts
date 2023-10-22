@@ -73,10 +73,10 @@ function particle_age_red(age)
 end
 
 function particle_age_blue(age)
-   local color=2
+   local color=7
    local size=4
    if (age>5) then
-     color=10
+     color=6
      size=3
    end
    if (age>10) then
@@ -84,15 +84,15 @@ function particle_age_blue(age)
      size=2
    end
    if (age>15) then
-     color=13
+     color=3
      size=1
    end
    if (age>20) then
-     color=2
+     color=13
      size=1
    end
    if (age>25) then
-     color=3
+     color=1
      size=1
    end
 

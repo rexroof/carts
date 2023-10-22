@@ -72,6 +72,33 @@ function particle_age_red(age)
    return color, size
 end
 
+function particle_age_blue(age)
+   local color=2
+   local size=4
+   if (age>5) then
+     color=10
+     size=3
+   end
+   if (age>10) then
+     color=12
+     size=2
+   end
+   if (age>15) then
+     color=13
+     size=1
+   end
+   if (age>20) then
+     color=2
+     size=1
+   end
+   if (age>25) then
+     color=3
+     size=1
+   end
+
+   return color, size
+end
+
 function new_wave(wave_size)
  for i=1,wave_size do
    local n = new_enemy()
@@ -133,11 +160,24 @@ function new_enemy()
 end
 
 -- add 50 particle explosion
-function blast(x,y)
+function blast(x,y,blue)
+  blue = blue or false
+
+  -- initial large circle
+  add(particles, { x=x, y=y,
+      sx=0,
+      sy=0,
+      blue=blue,
+      age=0,
+      size=10,
+      maxage=0
+      } )
+
   for i=1,50 do
     add(particles, { x=x, y=y,
         sx=(rnd()-0.5)*4,
         sy=(rnd()-0.5)*4,
+        blue=blue,
         age=0,
         maxage=rnd(30)
         } )
@@ -320,7 +360,7 @@ function update_game()
 
    -- if this enemy has hit ship
    if (invuln<=0) and (collide(ship,e)) then
-     blast(ship.x,ship.y)
+     blast(ship.x,ship.y,true)  -- blue is true
      lifes-=1
      e.hp-=3
 
@@ -405,7 +445,14 @@ function draw_game()
 
  -- draw particles
  for p in all(particles) do
-   local pcolor,psize=particle_age_red(p.age)
+   local pcolor=0
+   local psize=0
+
+   if (p.blue) then
+     pcolor,psize=particle_age_blue(p.age)
+   else
+     pcolor,psize=particle_age_red(p.age)
+   end
    circfill(p.x,p.y,psize,pcolor)
 
    -- this should probably be in update?

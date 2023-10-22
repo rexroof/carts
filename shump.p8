@@ -45,6 +45,33 @@ end  -- end _update
 -->8
 -- tools
 
+function particle_age_red(age)
+   local color=7
+   local size=4
+   if (age>5) then
+     color=10
+     size=3
+   end
+   if (age>10) then
+     color=9
+     size=2
+   end
+   if (age>15) then
+     color=8
+     size=1
+   end
+   if (age>20) then
+     color=2
+     size=1
+   end
+   if (age>25) then
+     color=5
+     size=1
+   end
+
+   return color, size
+end
+
 function new_wave(wave_size)
  for i=1,wave_size do
    local n = new_enemy()
@@ -295,7 +322,17 @@ function update_game()
    if (invuln<=0) and (collide(ship,e)) then
      blast(ship.x,ship.y)
      lifes-=1
-     del(enemies,e)
+     e.hp-=3
+
+     -- repeated from above, need to refactor
+     if e.hp <= 0 then
+      -- add(explosions, new_explosion(e.x-4,e.y-4))
+      blast(e.x+4,e.y+4)
+      del(enemies, e)
+      score+=15
+      sfx(2) -- death sound
+     end
+
      sfx(1)
      invuln=200  -- frames of invulnerability
    end
@@ -368,29 +405,7 @@ function draw_game()
 
  -- draw particles
  for p in all(particles) do
-   -- pset(p.x,p.y,14)
-   local pcolor=7
-   local psize=4
-   if (p.age>5) then
-     pcolor=10
-     psize=3
-   end
-   if (p.age>10) then
-     pcolor=9
-     psize=2
-   end
-   if (p.age>15) then
-     pcolor=8
-     psize=1
-   end
-   if (p.age>20) then
-     pcolor=2
-     psize=1
-   end
-   if (p.age>25) then
-     pcolor=5
-     psize=1
-   end
+   local pcolor,psize=particle_age_red(p.age)
    circfill(p.x,p.y,psize,pcolor)
 
    -- this should probably be in update?

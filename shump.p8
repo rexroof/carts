@@ -99,6 +99,18 @@ function particle_age_blue(age)
    return color, size
 end
 
+function small_shockwave(x,y)
+ add(shockwaves,{
+   x=x, y=y, r=2, maxr=4, color=9, speed=1
+ })
+end
+
+function big_shockwave(x,y)
+ add(shockwaves,{
+   x=x, y=y, r=3, maxr=30, color=7, speed=3
+ })
+end
+
 function new_wave(wave_size)
  for i=1,wave_size do
    local n = new_enemy()
@@ -182,6 +194,8 @@ function blast(x,y,blue)
         maxage=rnd(30)
         } )
   end
+
+  big_shockwave(x,y)
 end
 
 function new_explosion(x,y)
@@ -230,6 +244,7 @@ function game_start()
  enemies={}
  -- explosions={}
  particles={}
+ shockwaves={}
  -- multiple enemies? one after another over time? pattern?
  -- different types of enemies. new animation
  -- new property to enemies?  speed?  movement?
@@ -330,6 +345,7 @@ function update_game()
   for e in all (enemies) do
     -- if bullet hits enemy
     if (collide(b,e)) then
+      small_shockwave(b.x,b.y)
       del(bullets, b)  -- someday bullets may have health/peircing?
       e.hp-=1
       sfx(3)  -- hit sound
@@ -462,6 +478,16 @@ function draw_game()
    if (p.age>p.maxage) del(particles,p)
  end
 
+ -- draw shockwaves
+ for sw in all(shockwaves) do
+   circ(sw.x+4,sw.y+4,sw.r,sw.color)  -- white circle
+   sw.r+=sw.speed
+   if (sw.r > sw.maxr) then
+     del(shockwaves,sw)
+   end
+ end
+
+ -- draw life bar
  for i=1,maxlifes do
    if (lifes>=i) then
      spr(heart.pix,i*9-9,1)

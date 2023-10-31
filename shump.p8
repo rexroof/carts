@@ -133,37 +133,31 @@ function new_wave(wave_size)
  local frames=3
  local sprite=21
 
- if (wave == 1) then
-  sprite=21
-  frames=3
- elseif (wave == 2) then
-  sprite=56
-  frames=4
- elseif (wave == 3) then
-  sprite=52
-  frames=4
- elseif (wave == 4) then
-  sprite=48
-  frames=4
- elseif (wave == 5) then
-  sprite=44
-  frames=2
-  wave_size=1
+ if (wave==5) then
+   wave_size=1
  end
 
  for i=1,wave_size do
-   local n = new_enemy(sprite,frames)
-   n.x = flr(rnd(12)*10)
-   n.y = flr(rnd(5)*8)
+   local new = { x=flr(rnd(12)*10), y=flr(rnd(5)*8) }
 
-   if (wave == 5) then
-    n.h=2
-    n.w=2
-    n.hp=20
+   if (wave == 1) then
+    new.pix={21,22,23}
+   elseif (wave == 2) then
+    new.pix={48,49,50,51}
+   elseif (wave == 3) then
+    new.pix={52,53,54,55}
+   elseif (wave == 4) then
+    new.pix={56,57,58,59}
+   elseif (wave == 5) then
+    new.h=2
+    new.w=2
+    new.hp=20
+    new.ani_speed=0.1
+    new.pix={46,44,46,44,46,44,46}
    end
-
-   add(enemies,n)
+   add(enemies, new_enemy(new))
  end
+
 end
 
 function collide(a,b)
@@ -178,8 +172,7 @@ function collide(a,b)
 end
 
 function draw_junk(objs)
- for o in all (objs) do
-   local sprite=o.pix
+ for o in all(objs) do
    local height=o.h or 1 -- for wider/taller sprites
    local width=o.w or 1  -- for wider/taller sprites
 
@@ -188,6 +181,7 @@ function draw_junk(objs)
      pal(i,(i+o.pal_shift))
     end
    end
+
    if (o.flash != nil) then
      if o.flash > 0 then
        -- manipulate pallete if we're flashing
@@ -198,32 +192,36 @@ function draw_junk(objs)
        end
      end
    end
-   if (o.ani != nil) then
-     sprite+=o.ani
+
+   -- o.ani tracks which frame of the sprite animation we're on
+   if not(o.ani) then
+     o.ani=1
    end
-   spr(sprite, o.x, o.y, height, width)
+   spr(o.pix[flr(o.ani)], o.x, o.y, height, width)
 
    pal() -- reset pallete
  end
 end
 
-function new_enemy(pix, frames)
- local hp=rnd(3)+1  -- random health
- pix=pix or 21      -- default enemy sprite
- frames=frames or 3 -- 3 frames of sprite
+function new_enemy(input)
+ local presets = {
+   x=0, y=0,         -- position
+   pix={21,22,23},   -- sprite ids for animation
+   h=1,w=1,          -- height and width of sprites
+   ani=1,            -- animation frame of sprites
+   ani_speed=0.3,    -- animation speed
+   spd=1,            -- enemy speed
+   hp=rnd(3)+1,      -- health
+   flash=0           -- if we're flashing after hit
+ }
 
- return {
-   x=60, y=5,  -- position
-   pix=pix, -- sprite id
-   h=1,w=1,
-   pal_shift=(hp-1), -- pallete shift based on hp
-   ani=0,          -- animate sprites
-   ani_speed=0.3,  -- animation speed
-   max_ani=frames,
-   spd=1,  -- enemy speed
-   hp=hp,   -- health
-   flash=0 -- hurt flash?
-   }
+ presets.pal_shift=(presets.hp-1)  -- pallete shift based on hp
+
+ for k,v in pairs(input) do
+   presets[k]=v
+ end
+
+ return presets
 end
 
 -- add 50 particle explosion
@@ -433,7 +431,7 @@ function update_game()
  -- if (btnp(5)) bullet_timer=0
  if btn(5) then
   if bullet_timer <= 0 then
-   local newbullet={pix=16,x=ship.x,y=ship.y-3,life=60,sx=0,sy=0,spd=4 }
+   local newbullet={pix={16},x=ship.x,y=ship.y-3,life=60,sx=0,sy=0,spd=4,ani=1,ani_speed=0}
    add(bullets,newbullet)
    sfx(0)
    muzzle=5
@@ -448,6 +446,11 @@ function update_game()
  -- cycle through all bullets
  for b in all (bullets) do
   b.y=b.y-b.spd
+
+  b.ani+=b.ani_speed
+  if (b.ani > #b.pix)  then
+    b.ani=1
+  end
 
   if b.y < -10 then
     del(bullets, b)
@@ -479,9 +482,11 @@ function update_game()
  for e in all (enemies) do
    e.y+=e.spd
    if (e.y > 130) e.y=-10
-   e.ani+=(e.ani_speed * e.w)
-   if e.ani > (e.max_ani * e.w) then
-     e.ani=0
+
+   -- move this into an e:update function?
+   e.ani+=e.ani_speed
+   if (e.ani > #e.pix) then
+     e.ani=1
    end
 
    -- decrement invulnerability

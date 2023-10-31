@@ -153,7 +153,8 @@ function new_wave(wave_size)
     new.w=2
     new.hp=20
     new.ani_speed=0.1
-    new.pix={46,44,46,44,46,44,46}
+    new.pix={46,44}
+    new.pal_shift=0
    end
    add(enemies, new_enemy(new))
  end
@@ -217,6 +218,7 @@ function new_enemy(input)
 
  presets.pal_shift=(presets.hp-1)  -- pallete shift based on hp
 
+ -- override all presets with object that was passed in
  for k,v in pairs(input) do
    presets[k]=v
  end
@@ -448,7 +450,7 @@ function update_game()
   b.y=b.y-b.spd
 
   b.ani+=b.ani_speed
-  if (b.ani > #b.pix)  then
+  if (flr(b.ani) > #b.pix)  then
     b.ani=1
   end
 
@@ -485,7 +487,7 @@ function update_game()
 
    -- move this into an e:update function?
    e.ani+=e.ani_speed
-   if (e.ani > #e.pix) then
+   if (flr(e.ani) > #e.pix) then
      e.ani=1
    end
 

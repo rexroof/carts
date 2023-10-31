@@ -138,9 +138,20 @@ function new_wave(wave_size)
    wave_size=1
  end
 
- for i=1,wave_size do
-   local new = { x=flr(rnd(12)*10), y=flr(rnd(5)*8) }
+ local x=10
+ local y=10
+ local count=0
 
+ for i=1,wave_size do
+   count+=1
+   if (count > 8) then
+     x=10
+     y+=10
+     count=0
+   end
+
+   local new = { x=x,y=y,spd=0,sx=1}
+   x+=10
    if (wave == 1) then
     new.pix={21,22,23}
    elseif (wave == 2) then
@@ -150,12 +161,12 @@ function new_wave(wave_size)
    elseif (wave == 4) then
     new.pix={56,57,58,59}
    elseif (wave == 5) then
-    new.h=2
-    new.w=2
+    new.hitbox={h=14,w=13}
     new.hp=20
-    new.spd=0.5
     new.ani_speed=0.1
     new.pix={46,44}
+    new.h=2
+    new.w=2
     new.pal_shift=0
    end
    add(enemies, new_enemy(new))
@@ -164,21 +175,19 @@ function new_wave(wave_size)
 end
 
 function collide(a,b)
+ if (not(a.hitbox)) a.hitbox={h=8,w=8}
+ if (not(b.hitbox)) b.hitbox={h=8,w=8}
 
- if (not(a.h)) a.h=1
- if (not(a.w)) a.w=1
- if (not(b.h)) b.h=1
- if (not(b.w)) b.w=1
+ -- if a top > b bottom
+ if (a.y > b.y+b.hitbox.w-1) return false
+ -- if b top > a bottom
+ if (b.y > a.y+a.hitbox.h-1) return false
+ -- if a left > b right
+ if (a.x > b.x+b.hitbox.w-1) return false
+ -- if b left > a right
+ if (b.x > a.x+a.hitbox.w-1) return false
 
- -- collision math
- if ( ( abs(a.x-b.x) > ((a.w+b.w)*4) )
-    or (abs(a.y-b.y)> ((a.h+b.h)*4)   ) ) then
-  return false
- else
-  return true
- end
-
- return false
+ return true
 end
 
 function draw_junk(objs)
@@ -221,6 +230,7 @@ function new_enemy(input)
    ani=1,            -- animation frame of sprites
    ani_speed=0.3,    -- animation speed
    spd=1,            -- enemy speed
+   sx=0,sy=0,        -- x&y speed
    hp=rnd(3)+1,      -- health
    flash=0           -- if we're flashing after hit
  }
@@ -425,10 +435,6 @@ end
 function update_game()
  -- ship.x=ship.x + rnd(6) - 3
  -- ship.y=ship.y + rnd(6) - 3
- if(ship.x > 125) ship.x=120
- if(ship.y > 125) ship.y=120
- if(ship.x < 0) ship.x=1
- if(ship.y < 0) ship.y=1
 
  ship.sx=0
  ship.sy=0
@@ -460,7 +466,10 @@ function update_game()
  -- if (btnp(5)) bullet_timer=0
  if btn(5) then
   if bullet_timer <= 0 then
-   local newbullet={pix={16},x=ship.x,y=ship.y-3,life=60,sx=0,sy=0,spd=4,ani=1,ani_speed=0}
+   local newbullet={pix={17},hitbox={h=6,w=4},
+                     x=ship.x+2,y=ship.y-1,
+                     sx=0,sy=0,spd=4,
+                     ani=1,ani_speed=0}
    add(bullets,newbullet)
    sfx(0)
    muzzle=5
@@ -471,6 +480,11 @@ function update_game()
 
  ship.x=ship.x+ship.sx
  ship.y=ship.y+ship.sy
+
+ if(ship.x > 120) ship.x=120
+ if(ship.y > 120) ship.y=120
+ if(ship.x < 0) ship.x=1
+ if(ship.y < 0) ship.y=1
 
  -- cycle through all bullets
  for b in all (bullets) do
@@ -509,10 +523,25 @@ function update_game()
 
  -- cycle through all enemies
  for e in all (enemies) do
-   e.y+=e.spd
-   -- if enemy has left screeen
+   -- e.y+=e.spd
+   e.y+=e.sy
+   e.x+=e.sx
+
+   -- if any enemy hit edge of screen, change all enemies directions
+   if (e.x > 120) then
+     for x in all (enemies) do
+       x.y+=1
+       x.sx=-1
+     end
+   elseif (e.x < 0) then
+     for x in all (enemies) do
+       x.y+=1
+       x.sx=1
+     end
+   end
+   -- if enemy has exited to the bottom
    if (e.y > 130) then
-     -- used to reset to top e.y=-10
+     -- e.y=-10
      -- delete it, it's gone!
      del(enemies, e)
    end
@@ -616,7 +645,9 @@ function draw_game()
 
  end
 
+ -- muzzle flashes
  if(muzzle>0) circfill(ship.x+3,ship.y, muzzle, 7)
+ if(muzzle>0) circfill(ship.x+4,ship.y, muzzle, 7)
 
  -- draw explosions
  -- for pop in all(explosions) do
@@ -710,12 +741,12 @@ __gfx__
 00700700c55555c0c555555c0c55555c000000000000000000077000000000000000000000000000000000000000000000000000009119000099990000000000
 000000000ccaacc00ccaacc00ccaacc0000000000000000000000000000000000000000000000000000000000000000000000000000990000009900000000000
 0000000000c00c0000c00c0000c00c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-000000000000000000000000000000000000000033000033330000333300003300000000000000000088880000000000000b0000000000000000000000000000
-000000000000000000000000000000000000000033b00b3333b00b3333b00b3300000000000000000868888000000000000bb000000000000000000000000000
-00088000000000000000000000000000000000000b3bb3b00b3bb3b00b3bb3b00000000000000000888868880000000000bbbb00000000000000000000000000
-00aaaa000000000000000000000000000000000000b33b0000b33b0000b33b000000000000000000886888680000303300bbbb00000000000000000000000000
-00aaaa0000000000000000000000000000000000003bb300003bb300033bb330000000000000000088888888002223300bb44bb0000000000000000000000000
-000aa00000000000000000000000000000000000007337000373373003733730000000000000000088686868222122300bb44bb0000000000000000000000000
+000000009889000000000000000000000000000033000033330000333300003300000000000000000088880000000000000b0000000000000000000000000000
+000000009aa9000000000000000000000000000033b00b3333b00b3333b00b3300000000000000000868888000000000000bb000000000000000000000000000
+000880009aa900000000000000000000000000000b3bb3b00b3bb3b00b3bb3b00000000000000000888868880000000000bbbb00000000000000000000000000
+00aaaa000990000000000000000000000000000000b33b0000b33b0000b33b000000000000000000886888680000303300bbbb00000000000000000000000000
+00aaaa0007700000000000000000000000000000003bb300003bb300033bb330000000000000000088888888002223300bb44bb0000000000000000000000000
+000aa00006600000000000000000000000000000007337000373373003733730000000000000000088686868222122300bb44bb0000000000000000000000000
 00077000000000000000000000000000000000000070070000700700000000000000000000000000088888800222120000bbbb00000000000000000000000000
 000660000000000000000000000000000000000000700700000000000000000000000000000000000088880000222000000bb000000000000000000000000000
 00000000000000009880088900000000000000000009900000099000000000000000000000000000dddddddd0000000000000000000000000000000000000000

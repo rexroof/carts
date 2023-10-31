@@ -25,6 +25,7 @@ function _init()
  framecount=0
  blink_timer=0
  mode="start"
+ lockout=0  -- button lockout
 end
 
 function _draw()
@@ -152,6 +153,7 @@ function new_wave(wave_size)
     new.h=2
     new.w=2
     new.hp=20
+    new.spd=0.5
     new.ani_speed=0.1
     new.pix={46,44}
     new.pal_shift=0
@@ -162,8 +164,15 @@ function new_wave(wave_size)
 end
 
 function collide(a,b)
+
+ if (not(a.h)) a.h=1
+ if (not(a.w)) a.w=1
+ if (not(b.h)) b.h=1
+ if (not(b.w)) b.w=1
+
  -- collision math
- if ((abs(a.x-b.x)>8) or (abs(a.y-b.y)>8)) then
+ if ( ( abs(a.x-b.x) > ((a.w+b.w)*4) )
+    or (abs(a.y-b.y)> ((a.h+b.h)*4)   ) ) then
   return false
  else
   return true
@@ -300,6 +309,7 @@ function game_start()
  mode="wavetext"
  wavetime=60
  wave_size=5
+ wave=1
 
  heart={pix=14,x=1,y=1}
  emptyheart={pix=13,x=10,y=1}
@@ -313,7 +323,6 @@ function game_start()
  bullet_timer=0
  lifes=4
  maxlifes=4
- wave=1
  enemies={}
  -- explosions={}
  particles={}
@@ -358,6 +367,14 @@ function update_start()
 end
 
 function update_over()
+
+ -- don't do anything until lockout is over
+ if framecount < lockout then
+   return
+ else
+   lockout=0
+ end
+
  -- make sure we have released the buttons so we see the screen
  if btn(4)==false and btn(5)==false then
    buttonrelease=true
@@ -367,11 +384,20 @@ function update_over()
    if btnp(4) or btnp(5) then
      mode="start"
      buttonrelease=false
+     lockout=0
    end
  end
 end
 
 function update_win()
+
+ -- don't do anything until lockout is over
+ if framecount < lockout then
+   return
+ else
+   lockout=0
+ end
+
  -- make sure we have released the buttons so we see the screen
  if btn(4)==false and btn(5)==false then
    buttonrelease=true
@@ -428,6 +454,7 @@ function update_game()
 
  if btnp(4) then
    mode="over"
+   lockout=framecount+30
  end
 
  -- if (btnp(5)) bullet_timer=0
@@ -483,7 +510,12 @@ function update_game()
  -- cycle through all enemies
  for e in all (enemies) do
    e.y+=e.spd
-   if (e.y > 130) e.y=-10
+   -- if enemy has left screeen
+   if (e.y > 130) then
+     -- used to reset to top e.y=-10
+     -- delete it, it's gone!
+     del(enemies, e)
+   end
 
    -- move this into an e:update function?
    e.ani+=e.ani_speed
@@ -512,7 +544,10 @@ function update_game()
      sfx(1)
      invuln=200  -- frames of invulnerability
    end
-   if (lifes<=0) mode="over" -- this should be a function inside ship obj?
+   if (lifes<=0) then
+     mode="over" -- this should be a function inside ship obj?
+     lockout=framecount+30
+   end
  end -- for e in enemies
 
  if (#enemies == 0) and (wavetime <= 0) then
@@ -523,6 +558,7 @@ function update_game()
 
    if wave>5 then
      mode="win"
+     lockout=framecount+30
    end
  end
 

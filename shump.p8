@@ -130,48 +130,23 @@ function small_sparks(x,y)
   end
 end
 
-function new_wave(wave_size)
- local frames=3
- local sprite=21
-
- if (wave==5) then
-   wave_size=1
- end
-
- local x=10
+function new_wave(spec)
+ local x=6
  local y=10
- local count=0
 
- for i=1,wave_size do
-   count+=1
-   if (count > 8) then
-     x=10
-     y+=10
-     count=0
+ for row in all(spec) do
+   for en in all(row) do
+     if (en != 0) then
+      en.x=x
+      en.y=y
+      local e = new_enemy(en)
+      add(enemies, e)
+     end
+     x+=11
    end
-
-   local new = { x=x,y=y,spd=0,sx=1}
-   x+=10
-   if (wave == 1) then
-    new.pix={21,22,23}
-   elseif (wave == 2) then
-    new.pix={48,49,50,51}
-   elseif (wave == 3) then
-    new.pix={52,53,54,55}
-   elseif (wave == 4) then
-    new.pix={56,57,58,59}
-   elseif (wave == 5) then
-    new.hitbox={h=14,w=13}
-    new.hp=20
-    new.ani_speed=0.1
-    new.pix={46,44}
-    new.h=2
-    new.w=2
-    new.pal_shift=0
-   end
-   add(enemies, new_enemy(new))
+   y+=10
+   x=7
  end
-
 end
 
 function collide(a,b)
@@ -230,19 +205,45 @@ function new_enemy(input)
    ani=1,            -- animation frame of sprites
    ani_speed=0.3,    -- animation speed
    spd=1,            -- enemy speed
+   pal_shift=0,
    sx=0,sy=0,        -- x&y speed
    hp=rnd(3)+1,      -- health
+   mission="flyin",  -- initial state
    flash=0           -- if we're flashing after hit
  }
-
- presets.pal_shift=(presets.hp-1)  -- pallete shift based on hp
 
  -- override all presets with object that was passed in
  for k,v in pairs(input) do
    presets[k]=v
  end
 
+ -- presets.pal_shift=(presets.hp-1)  -- pallete shift based on hp
+
+ -- set target position to original x & y
+ presets.target={x=presets.x,y=presets.y}
+ -- move current position way off the upper screen
+ presets.y-=flr(rnd(40))+20
+
  return presets
+end
+
+function enemy_mission(e)
+ if e.mission == "flyin" then
+   -- e.y+=e.sy
+   -- e.x+=e.sx
+   e.y+=rnd(2)+1
+   if (e.y>=e.target.y) then
+
+     -- align the rows very jankily
+     e.y = e.target.y+(rnd()-0.5)*3
+     e.x = e.target.x+(rnd()-0.5)*3
+
+     e.mission="chill"
+   end
+ elseif e.mission == "attack" then
+ elseif e.mission == "chill" then
+  -- should we try blocking hits to an above enemy?
+ end
 end
 
 -- add 50 particle explosion
@@ -318,12 +319,58 @@ function game_start()
  framecount=0
  mode="wavetext"
  wavetime=60
- wave_size=5
  wave=1
+
+ enemy_types={
+  fly={pix={21,22,23}, hp=2},
+  mushroom={pix={48,49,50,51}, hp=3},
+  blade={pix={52,53,54,55}, hp=4},
+  bubble={pix={56,57,58,59}, hp=5},
+  ignokt={
+    pix={46,44},
+    h=2, w=2,
+    hitbox={h=14,w=13},
+    hp=20,
+    ani_speed=0.1,
+    pal_shift=0
+   }
+  }
+  local f=enemy_types.fly
+  local m=enemy_types.mushroom
+  local d=enemy_types.blade
+  local b=enemy_types.bubble
+  local i=enemy_types.ignokt
+
+  waves={
+    -- wave one
+    {{f, f, f, f, f, f, f, f, f, f, f},
+     {f, f, f, f, f, f, f, f, f, f, f},
+     {f, f, f, f, f, f, f, f, f, f, f}},
+
+    -- wave two
+    {{m, m, 0, 0, f, f, f, 0, 0, f, m},
+     {m, m, 0, 0, m, m, m, 0, 0, f, m},
+     {m, m, 0, 0, f, f, f, 0, 0, f, m}},
+
+    -- wave three
+    {{d, d, d, d, d, d, d, d, d, d, d},
+     {m, m, m, 0, 0, 0, 0, 0, m, m, m},
+     {m, m, m, 0, 0, 0, 0, 0, m, m, m}},
+
+    -- wave four
+    {{b, b, b, b, 0, 0, 0, b, b, b, b},
+     {b, 0, b, 0, b, 0, b, 0, b, 0, b},
+     {0, b, 0, b, 0, b, 0, b, 0, b, 0}},
+
+    -- wave five
+    {{0, 0, 0, 0, 0, i, 0, 0, 0, 0, 0},
+     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+  }
 
  heart={pix=14,x=1,y=1}
  emptyheart={pix=13,x=10,y=1}
- ship={ pix=2,x=64,y=64,sx=0,sy=0 }
+ ship={pix=2,x=64,y=84,sx=0,sy=0}
  invuln=0
  flamespr=5
  muzzle=0
@@ -426,8 +473,7 @@ function update_wavetext()
  wavetime-=1
  if wavetime <= 0 then
    mode="game"
-   new_wave(wave_size)
-   wave_size+=5
+   new_wave(waves[wave])
  end
 end
 
@@ -523,20 +569,18 @@ function update_game()
 
  -- cycle through all enemies
  for e in all (enemies) do
-   -- e.y+=e.spd
-   e.y+=e.sy
-   e.x+=e.sx
+   enemy_mission(e)
 
    -- if any enemy hit edge of screen, change all enemies directions
    if (e.x > 120) then
      for x in all (enemies) do
-       x.y+=1
-       x.sx=-1
+       -- x.y+=1
+       -- x.sx=-1
      end
    elseif (e.x < 0) then
      for x in all (enemies) do
-       x.y+=1
-       x.sx=1
+       -- x.y+=1
+       -- x.sx=1
      end
    end
    -- if enemy has exited to the bottom

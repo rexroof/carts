@@ -3,6 +3,12 @@ version 41
 __lua__
 -- main
 
+
+-- add occasional enemy attack
+
+-- implement explode logic
+-- make janky enemies bump into each other
+
 -- homework
   -- try adding explosions?
     -- sprite animation?
@@ -132,13 +138,14 @@ end
 
 function new_wave(spec)
  local x=6
- local y=10
+ local y=20
 
  for row in all(spec) do
    for en in all(row) do
      if (en != 0) then
       en.x=x
       en.y=y
+      en.wait=(x/4)
       local e = new_enemy(en)
       add(enemies, e)
      end
@@ -208,6 +215,7 @@ function new_enemy(input)
    pal_shift=0,
    sx=0,sy=0,        -- x&y speed
    hp=rnd(3)+1,      -- health
+   wait=0,
    mission="flyin",  -- initial state
    flash=0           -- if we're flashing after hit
  }
@@ -219,27 +227,44 @@ function new_enemy(input)
 
  -- presets.pal_shift=(presets.hp-1)  -- pallete shift based on hp
 
- -- set target position to original x & y
- presets.target={x=presets.x,y=presets.y}
+ -- set target position to original x & y + random jank
+ presets.target={
+   x = presets.x+(rnd()-0.5)*3,
+   y = presets.y+(rnd()-0.5)*3,
+  }
+
  -- move current position way off the upper screen
- presets.y-=flr(rnd(40))+20
+ presets.y-=flr(rnd(40))+50
+ -- presets.x=flr(rnd(200))
+ presets.x=64
 
  return presets
 end
 
 function enemy_mission(e)
+
+ if (e.wait>0) then
+   e.wait-=1
+   return
+ end
  if e.mission == "flyin" then
    -- e.y+=e.sy
    -- e.x+=e.sx
-   e.y+=rnd(2)+1
-   if (e.y>=e.target.y) then
 
-     -- align the rows very jankily
-     e.y = e.target.y+(rnd()-0.5)*3
-     e.x = e.target.x+(rnd()-0.5)*3
+   -- simple easing function
+   local n = (rnd(3)+10)
+   e.y+=(e.target.y-e.y)/n
+   e.x+=(e.target.x-e.x)/n
+   -- e.y+=rnd(2)+1
+
+   if (e.y>=(e.target.y-1)) and (e.x>=(e.target.x-1)) then
+     -- snap to your actual position
+     e.y = e.target.y
+     e.x = e.target.x
 
      e.mission="chill"
    end
+
  elseif e.mission == "attack" then
  elseif e.mission == "chill" then
   -- should we try blocking hits to an above enemy?

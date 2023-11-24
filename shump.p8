@@ -195,9 +195,7 @@ function draw_junk(objs)
    end
 
    -- o.ani tracks which frame of the sprite animation we're on
-   if not(o.ani) then
-     o.ani=1
-   end
+   if (not(o.ani)) o.ani=1
    spr(o.pix[flr(o.ani)], o.x, o.y, height, width)
 
    pal() -- reset pallete
@@ -243,10 +241,15 @@ end
 
 function enemy_mission(e)
 
+-- don't do anything unless in game mode
+if (mode != "game") return
+
+ -- don't do anything if we're waiting
  if (e.wait>0) then
    e.wait-=1
    return
  end
+
  if e.mission == "flyin" then
    -- e.y+=e.sy
    -- e.x+=e.sx
@@ -266,10 +269,62 @@ function enemy_mission(e)
    end
 
  elseif e.mission == "attack" then
+   -- go down if attacking
+   e.y+=1
+
+   -- delete if off screen
+   if (e.y > 129) del(enemies,e)
+
  elseif e.mission == "chill" then
   -- should we try blocking hits to an above enemy?
  end
-end
+
+end  -- end enemy_mission
+
+-- pick an enemy and attack
+function enemy_attack()
+  -- don't do anything if not in game mode
+  if (mode != "game") return
+  -- if no enemies, return
+  if (#enemies==0) return
+  -- only act every 60 frames
+  if (framecount%60 != 0) return
+
+  local picking=true
+  while (picking) do
+    -- grab random enemy
+    e=rnd(enemies)
+
+    -- if we are chillin, see if we are blocked, else attack
+    if (e.mission == "chill") then
+
+      -- make a copy of our enemy to test
+      local ecopy={x=e.x,y=e.y}
+      if (not(e.hitbox)) then
+        ecopy.hitbox={h=8,w=8}
+      else
+        ecopy.hitbox={h=e.hitbox.h,w=e.hitbox.w}
+      end
+
+      -- move every hitbox steps until we're off screen or hit something
+      local blocked=false
+      while (ecopy.y < 128) do
+        ecopy.y+=ecopy.hitbox.h
+        for b in all(enemies) do
+          -- if we would hit another enemy, we are blocked
+          if (collide(ecopy,b)) blocked=true
+        end
+      end
+     end
+
+      if (not blocked) then
+        e.mission="attack"
+        picked=false  -- yay, found someone!
+      end
+  end
+
+  return
+end -- enemy attack, picking function
 
 -- add 50 particle explosion
 function blast(x,y,blue)
@@ -590,6 +645,10 @@ function update_game()
       end
     end
   end
+
+  -- one of our enemies should attack
+  enemy_attack()
+
  end
 
  -- cycle through all enemies

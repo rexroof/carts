@@ -3,6 +3,9 @@ version 41
 __lua__
 -- main
 
+-- new sprite move function
+--  move towards target location using sy and sx
+--  set location to target if overshot?
 
 -- add occasional enemy attack
 
@@ -17,149 +20,145 @@ __lua__
     -- pixel explosion based on enemy sprite?
 
 -- todo
--- add enemy health
 -- add bullet dmg
 -- bullet hitbox
 -- expand objects
 -- add invulnerablity frames to ship
 -- add bullet rate/timer to ship
 -- some ships should have charge shots?
-
+-- shooting powerups should change them.  randomly? chance to destroy them?
 
 function _init()
  cls(0)
- framecount=0
+ t=0
  blink_timer=0
  mode="start"
  lockout=0  -- button lockout
 end
 
 function _draw()
-  if (mode == "game") then draw_game()
-  elseif (mode == "start") then draw_start()
-  elseif (mode == "wavetext") then draw_wavetext()
-  elseif (mode == "over") then draw_over()
-  elseif (mode == "win") then draw_win()
-  end
+ if (mode == "game") then draw_game()
+ elseif (mode == "start") then draw_start()
+ elseif (mode == "wavetext") then draw_wavetext()
+ elseif (mode == "over") then draw_over()
+ elseif (mode == "win") then draw_win()
+ end
 end -- _draw
 
 function _update()
-  blink_timer+=1
-  framecount+=1
-  if (mode == "game") then update_game()
-  elseif (mode == "start") then update_start()
-  elseif (mode == "wavetext") then update_wavetext()
-  elseif (mode == "over") then update_over()
-  elseif (mode == "win") then update_win()
-  end
+ blink_timer+=1
+ t+=1
+ if (mode == "game") then update_game()
+ elseif (mode == "start") then update_start()
+ elseif (mode == "wavetext") then update_wavetext()
+ elseif (mode == "over") then update_over()
+ elseif (mode == "win") then update_win()
+ end
 end  -- end _update
 -->8
 -- tools
 
 function particle_age_red(age)
-   local color=7
-   local size=4
-   if (age>5) then
-     color=10
-     size=3
-   end
-   if (age>10) then
-     color=9
-     size=2
-   end
-   if (age>15) then
-     color=8
-     size=1
-   end
-   if (age>20) then
-     color=2
-     size=1
-   end
-   if (age>25) then
-     color=5
-     size=1
-   end
-
-   return color, size
+ local color=7
+ local size=4
+ if (age>5) then
+  color=10
+  size=3
+ end
+ if (age>10) then
+  color=9
+  size=2
+ end
+ if (age>15) then
+  color=8
+  size=1
+ end
+ if (age>20) then
+  color=2
+  size=1
+ end
+ if (age>25) then
+  color=5
+  size=1
+ end
+ return color, size
 end
 
 function particle_age_blue(age)
-   local color=7
-   local size=4
-   if (age>5) then
-     color=6
-     size=3
-   end
-   if (age>10) then
-     color=12
-     size=2
-   end
-   if (age>15) then
-     color=3
-     size=1
-   end
-   if (age>20) then
-     color=13
-     size=1
-   end
-   if (age>25) then
-     color=1
-     size=1
-   end
-
-   return color, size
+ local color=7
+ local size=4
+ if (age>5) then
+  color=6
+  size=3
+ end
+ if (age>10) then
+  color=12
+  size=2
+ end
+ if (age>15) then
+  color=3
+  size=1
+ end
+ if (age>20) then
+  color=13
+  size=1
+ end
+ if (age>25) then
+  color=1
+  size=1
+ end
+ return color, size
 end
 
 function small_shockwave(x,y)
  add(shockwaves,{
-   x=x, y=y, r=2, maxr=4, color=9, speed=1
+  x=x, y=y, r=2, maxr=4, color=9, speed=1
  })
 end
 
 function big_shockwave(x,y)
  add(shockwaves,{
-   x=x, y=y, r=3, maxr=30, color=7, speed=3
+  x=x, y=y, r=3, maxr=30, color=7, speed=3
  })
 end
 
 -- a couple sparks when we hit enemies
 function small_sparks(x,y)
-  for i=1,rnd(3) do
-    add(particles, { x=x, y=y,
-        sx=(rnd()-0.5)*8,
-        sy=(rnd()-1)*3, -- flying backwards (upwards)
-        blue=blue,
-        age=0,
-        spark=true,
-        maxage=rnd(30)
-        } )
-  end
+ for i=1,rnd(3) do
+  add(particles, { x=x, y=y,
+  sx=(rnd()-0.5)*8,
+  sy=(rnd()-1)*3, -- flying backwards (upwards)
+  blue=blue,
+  age=0,
+  spark=true,
+  maxage=rnd(30)
+ } )
+end
 end
 
-function new_wave(spec)
+function new_wave(incomingwave)
  local x=6
  local y=20
-
+ local spec=incomingwave.patterns
  for row in all(spec) do
-   for en in all(row) do
-     if (en != 0) then
-      en.x=x
-      en.y=y
-      en.wait=(x/4)
-      local e = new_enemy(en)
-      add(enemies, e)
-     end
-     x+=11
+  for en in all(row) do
+   if (en != 0) then
+    en.x=x
+    en.y=y
+    en.wait=(x/4)
+    local e = new_enemy(en)
+    add(enemies, e)
    end
-   y+=10
-   x=7
+   x+=11
+  end
+  y+=10
+  x=7
  end
 end
 
 function collide(a,b)
  if (not(a.hitbox)) a.hitbox={h=8,w=8}
  if (not(b.hitbox)) b.hitbox={h=8,w=8}
-
  -- if a top > b bottom
  if (a.y > b.y+b.hitbox.w-1) return false
  -- if b top > a bottom
@@ -168,37 +167,32 @@ function collide(a,b)
  if (a.x > b.x+b.hitbox.w-1) return false
  -- if b left > a right
  if (b.x > a.x+a.hitbox.w-1) return false
-
  return true
 end
 
 function draw_junk(objs)
  for o in all(objs) do
-   local height=o.h or 1 -- for wider/taller sprites
-   local width=o.w or 1  -- for wider/taller sprites
-
-   if (o.pal_shift != nil) then
+  local height=o.h or 1 -- for wider/taller sprites
+  local width=o.w or 1  -- for wider/taller sprites
+  if (o.pal_shift != nil) then
+   for i=1,15 do
+    pal(i,(i+o.pal_shift))
+   end
+  end
+  if (o.flash != nil) then
+   if o.flash > 0 then
+    -- manipulate pallete if we're flashing
+    o.flash-=1
+    -- change every color to white for flashing
     for i=1,15 do
-     pal(i,(i+o.pal_shift))
+     pal(i,7)
     end
    end
-
-   if (o.flash != nil) then
-     if o.flash > 0 then
-       -- manipulate pallete if we're flashing
-       o.flash-=1
-       -- change every color to white for flashing
-       for i=1,15 do
-        pal(i,7)
-       end
-     end
-   end
-
-   -- o.ani tracks which frame of the sprite animation we're on
-   if (not(o.ani)) o.ani=1
-   spr(o.pix[flr(o.ani)], o.x, o.y, height, width)
-
-   pal() -- reset pallete
+  end
+  -- o.ani tracks which frame of the sprite animation we're on
+  if (not(o.ani)) o.ani=1
+  spr(o.pix[flr(o.ani)], o.x, o.y, height, width)
+  pal() -- reset pallete
  end
 end
 
@@ -241,13 +235,13 @@ end
 
 function enemy_mission(e)
 
--- don't do anything unless in game mode
-if (mode != "game") return
+ -- don't do anything unless in game mode
+ if (mode != "game") return
 
  -- don't do anything if we're waiting
  if (e.wait>0) then
-   e.wait-=1
-   return
+  e.wait-=1
+  return
  end
 
  if e.mission == "flyin" then
@@ -286,9 +280,7 @@ function enemy_attack()
   -- don't do anything if not in game mode
   if (mode != "game") return
   -- if no enemies, return
-  if (#enemies==0) return
-  -- only act every 60 frames
-  if (framecount%60 != 0) return
+  if (#enemies<5) return
 
   local picking=true
   while (picking) do
@@ -297,7 +289,6 @@ function enemy_attack()
 
     -- if we are chillin, see if we are blocked, else attack
     if (e.mission == "chill") then
-
       -- make a copy of our enemy to test
       local ecopy={x=e.x,y=e.y}
       if (not(e.hitbox)) then
@@ -315,12 +306,17 @@ function enemy_attack()
           if (collide(ecopy,b)) blocked=true
         end
       end
-     end
 
       if (not blocked) then
         e.mission="attack"
-        picked=false  -- yay, found someone!
+        picking=false  -- yay, found someone!
       end
+
+     end -- end if mission == chill
+
+     -- if we have fewer enemies, we only get one random shot to attack
+     if (#enemies < 5) picking=false
+
   end
 
   return
@@ -396,7 +392,7 @@ function starfield()
 end
 
 function game_start()
- framecount=0
+ t=0
  mode="wavetext"
  wavetime=60
  wave=1
@@ -407,45 +403,67 @@ function game_start()
   blade={pix={52,53,54,55}, hp=4},
   bubble={pix={56,57,58,59}, hp=5},
   ignokt={
-    pix={46,44},
-    h=2, w=2,
-    hitbox={h=14,w=13},
-    hp=20,
-    ani_speed=0.1,
-    pal_shift=0
-   }
+   pix={46,44},
+   h=2, w=2,
+   hitbox={h=14,w=13},
+   hp=20,
+   ani_speed=0.1,
+   pal_shift=0
   }
-  local f=enemy_types.fly
-  local m=enemy_types.mushroom
-  local d=enemy_types.blade
-  local b=enemy_types.bubble
-  local i=enemy_types.ignokt
+ }
 
-  waves={
-    -- wave one
-    {{f, f, f, f, f, f, f, f, f, f, f},
+ local f=enemy_types.fly
+ local m=enemy_types.mushroom
+ local d=enemy_types.blade
+ local b=enemy_types.bubble
+ local i=enemy_types.ignokt
+
+ waves={
+  -- wave one
+  { attack_speed=60,
+    patterns={
      {f, f, f, f, f, f, f, f, f, f, f},
-     {f, f, f, f, f, f, f, f, f, f, f}},
+     {f, f, f, f, f, f, f, f, f, f, f},
+     {f, f, f, f, f, f, f, f, f, f, f}
+    },
+  },
 
-    -- wave two
-    {{m, m, 0, 0, f, f, f, 0, 0, f, m},
-     {m, m, 0, 0, m, m, m, 0, 0, f, m},
-     {m, m, 0, 0, f, f, f, 0, 0, f, m}},
+ -- wave two
+ { attack_speed=50,
+ patterns={
+  {m, m, 0, 0, f, f, f, 0, 0, f, m},
+  {m, m, 0, 0, m, m, m, 0, 0, f, m},
+  {m, m, 0, 0, f, f, f, 0, 0, f, m},
+ },
+},
 
-    -- wave three
-    {{d, d, d, d, d, d, d, d, d, d, d},
-     {m, m, m, 0, 0, 0, 0, 0, m, m, m},
-     {m, m, m, 0, 0, 0, 0, 0, m, m, m}},
+   -- wave three
+   { attack_speed=40,
+     patterns={
+      {d, d, d, d, d, d, d, d, d, d, d},
+      {m, m, m, 0, 0, 0, 0, 0, m, m, m},
+      {m, m, m, 0, 0, 0, 0, 0, m, m, m},
+     },
+   },
 
-    -- wave four
-    {{b, b, b, b, 0, 0, 0, b, b, b, b},
-     {b, 0, b, 0, b, 0, b, 0, b, 0, b},
-     {0, b, 0, b, 0, b, 0, b, 0, b, 0}},
+   -- wave four
+   { attack_speed=30,
+     patterns={
+      {b, b, b, b, 0, 0, 0, b, b, b, b},
+      {b, 0, b, 0, b, 0, b, 0, b, 0, b},
+      {0, b, 0, b, 0, b, 0, b, 0, b, 0},
+     },
+   },
 
-    -- wave five
-    {{0, 0, 0, 0, 0, i, 0, 0, 0, 0, 0},
-     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+   -- wave five
+   { attack_speed=20,
+     patterns={
+      {0, 0, 0, 0, 0, i, 0, 0, 0, 0, 0},
+      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+     },
+   },
+
   }
 
  heart={pix=14,x=1,y=1}
@@ -506,7 +524,7 @@ end
 function update_over()
 
  -- don't do anything until lockout is over
- if framecount < lockout then
+ if t < lockout then
    return
  else
    lockout=0
@@ -529,7 +547,7 @@ end
 function update_win()
 
  -- don't do anything until lockout is over
- if framecount < lockout then
+ if t < lockout then
    return
  else
    lockout=0
@@ -576,20 +594,14 @@ function update_game()
    ship.pix=3
  end
 
- if btn(2) then
-   ship.sy=-2
- end
-
- if btn(3) then
-   ship.sy=2
- end
+ if (btn(2)) ship.sy=-2
+ if (btn(3)) ship.sy=2
 
  if btnp(4) then
-   mode="over"
-   lockout=framecount+30
+  -- this doesn't do anything yet
  end
 
- -- if (btnp(5)) bullet_timer=0
+ -- shoot a bullet!
  if btn(5) then
   if bullet_timer <= 0 then
    local newbullet={pix={17},hitbox={h=6,w=4},
@@ -646,8 +658,9 @@ function update_game()
     end
   end
 
-  -- one of our enemies should attack
-  enemy_attack()
+  -- every X frames, pick an enemy to attack
+  local attack_speed=waves[wave].attack_speed
+  if (t%attack_speed == 0) enemy_attack()
 
  end
 
@@ -703,7 +716,7 @@ function update_game()
    end
    if (lifes<=0) then
      mode="over" -- this should be a function inside ship obj?
-     lockout=framecount+30
+     lockout=t+30
    end
  end -- for e in enemies
 
@@ -715,7 +728,7 @@ function update_game()
 
    if wave>5 then
      mode="win"
-     lockout=framecount+30
+     lockout=t+30
    end
  end
 
@@ -724,7 +737,7 @@ function update_game()
 
  if(muzzle>0) muzzle=muzzle-1
 
- if (framecount % 5) then
+ if (t % 5) then
    stars=animatestars(stars)
  end
 
@@ -765,7 +778,7 @@ function draw_game()
   spr(flamespr,ship.x,ship.y+6)
  else
   -- blink ship while invulnerable
-  if sin(framecount/3)<0.5 then
+  if sin(t/3)<0.5 then
    spr(ship.pix,ship.x,ship.y)
    spr(flamespr,ship.x,ship.y+6)
   end

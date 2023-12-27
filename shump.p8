@@ -34,13 +34,13 @@ end  -- end _update
 -- tools
 
 -- blue or red particle colors, fizzing out with age
-function particle_age(age, colorset)
+function particle_age(age, blue)
  local colors={
   red={ 7,10, 9,8, 2,5},
   blue={7, 6,12,3,13,1},
  }
  local set=colors.red
- if (colorset == "blue") set=colors.blue
+ if (blue) set=colors.blue
  local color=set[0]
  local size=4
 
@@ -68,12 +68,14 @@ function particle_age(age, colorset)
  return color,size
 end
 
+-- add a shockwave to array at position
 function small_shockwave(x,y)
  add(shockwaves,{
   x=x, y=y, r=2, maxr=4, color=9, speed=1
  })
 end
 
+-- add a large shockwave to array at position
 function big_shockwave(x,y)
  add(shockwaves,{
   x=x, y=y, r=3, maxr=30, color=7, speed=3
@@ -83,17 +85,19 @@ end
 -- a couple sparks when we hit enemies
 function small_sparks(x,y)
  for i=1,rnd(3) do
-  add(particles, { x=x, y=y,
-  sx=(rnd()-0.5)*8,
-  sy=(rnd()-1)*3, -- flying backwards (upwards)
-  blue=blue,
-  age=0,
-  spark=true,
-  maxage=rnd(30)
- } )
-end
+  add(particles, {
+   x=x, y=y,
+   sx=(rnd()-0.5)*8,
+   sy=(rnd()-1)*3, -- flying backwards (upwards)
+   blue=blue,
+   age=0,
+   spark=true,
+   maxage=rnd(30)
+  } )
+ end
 end
 
+-- create new enemies from wave table
 function new_wave(incomingwave)
  local x=6
  local y=20
@@ -114,9 +118,11 @@ function new_wave(incomingwave)
  end
 end
 
+-- return true if two objects have collided
 function collide(a,b)
- if (not(a.hitbox)) a.hitbox={h=8,w=8}
- if (not(b.hitbox)) b.hitbox={h=8,w=8}
+ -- hitbox defaults to 7x7
+ if (not(a.hitbox)) a.hitbox={h=7,w=7}
+ if (not(b.hitbox)) b.hitbox={h=7,w=7}
  -- if a top > b bottom
  if (a.y > b.y+b.hitbox.w-1) return false
  -- if b top > a bottom
@@ -128,6 +134,7 @@ function collide(a,b)
  return true
 end
 
+-- generic sprite draw function
 function draw_junk(objs)
  for o in all(objs) do
   local height=o.h or 1 -- for wider/taller sprites
@@ -154,6 +161,7 @@ function draw_junk(objs)
  end
 end
 
+-- generate a new enemy and return a table of it
 function new_enemy(input)
  local presets = {
    x=0, y=0,         -- position
@@ -169,33 +177,27 @@ function new_enemy(input)
    mission="flyin",  -- initial state
    flash=0           -- if we're flashing after hit
  }
-
  -- override all presets with object that was passed in
  for k,v in pairs(input) do
    presets[k]=v
  end
-
  -- presets.pal_shift=(presets.hp-1)  -- pallete shift based on hp
-
  -- set target position to original x & y + random jank
  presets.target={
    x = presets.x+(rnd()-0.5)*3,
    y = presets.y+(rnd()-0.5)*3,
   }
-
  -- move current position way off the upper screen
  presets.y-=flr(rnd(40))+50
  -- presets.x=flr(rnd(200))
  presets.x=64
-
  return presets
-end
+end -- end new_enemy
 
+-- enemy update function for when on mission
 function enemy_mission(e)
-
  -- don't do anything unless in game mode
  if (mode != "game") return
-
  -- don't do anything if we're waiting
  if (e.wait>0) then
   e.wait-=1
@@ -205,79 +207,66 @@ function enemy_mission(e)
  if e.mission == "flyin" then
    -- e.y+=e.sy
    -- e.x+=e.sx
-
    -- simple easing function
    local n = (rnd(3)+10)
    e.y+=(e.target.y-e.y)/n
    e.x+=(e.target.x-e.x)/n
    -- e.y+=rnd(2)+1
-
    if (e.y>=(e.target.y-1)) and (e.x>=(e.target.x-1)) then
      -- snap to your actual position
      e.y = e.target.y
      e.x = e.target.x
-
      e.mission="chill"
    end
-
  elseif e.mission == "attack" then
    -- go down if attacking
    e.y+=1
-
    -- delete if off screen
    if (e.y > 129) del(enemies,e)
-
  elseif e.mission == "chill" then
   -- should we try blocking hits to an above enemy?
+  return
  end
-
 end  -- end enemy_mission
 
 -- pick an enemy and attack
 function enemy_attack()
-  -- don't do anything if not in game mode
-  if (mode != "game") return
-  -- if no enemies, return
-  if (#enemies<5) return
-
-  local picking=true
-  while (picking) do
-    -- grab random enemy
-    e=rnd(enemies)
-
-    -- if we are chillin, see if we are blocked, else attack
-    if (e.mission == "chill") then
-      -- make a copy of our enemy to test
-      local ecopy={x=e.x,y=e.y}
-      if (not(e.hitbox)) then
-        ecopy.hitbox={h=8,w=8}
-      else
-        ecopy.hitbox={h=e.hitbox.h,w=e.hitbox.w}
-      end
-
-      -- move every hitbox steps until we're off screen or hit something
-      local blocked=false
-      while (ecopy.y < 128) do
-        ecopy.y+=ecopy.hitbox.h
-        for b in all(enemies) do
-          -- if we would hit another enemy, we are blocked
-          if (collide(ecopy,b)) blocked=true
-        end
-      end
-
-      if (not blocked) then
-        e.mission="attack"
-        picking=false  -- yay, found someone!
-      end
-
-     end -- end if mission == chill
-
-     -- if we have fewer enemies, we only get one random shot to attack
-     if (#enemies < 5) picking=false
-
-  end
-
-  return
+ -- don't do anything if not in game mode
+ if (mode != "game") return
+ -- if no enemies, return
+ if (#enemies<5) return
+ local picking=true
+ while (picking) do
+  -- grab random enemy
+  e=rnd(enemies)
+  -- if we are chillin, see if we are blocked, else attack
+  if (e.mission == "chill") then
+   -- make a copy of our enemy to test
+   local ecopy={x=e.x,y=e.y}
+   if (not(e.hitbox)) then
+    ecopy.hitbox={h=8,w=8}
+   else
+    ecopy.hitbox={h=e.hitbox.h,w=e.hitbox.w}
+   end
+   -- move every hitbox steps until we're off screen or hit something
+   local blocked=false
+   while (ecopy.y < 128) do
+    ecopy.y+=ecopy.hitbox.h
+    for b in all(enemies) do
+     -- if we would hit another enemy, we are blocked
+     if (collide(ecopy,b)) blocked=true
+    end
+   end
+   -- if not blocked, tell enemy to attack
+   if (not blocked) then
+    e.mission="attack"
+    picking=false  -- yay, found someone!
+   end
+  end -- end if mission == chill
+  -- if we have fewer enemies, we only get one random shot to attack
+  if (#enemies < 5) picking=false
+ end -- end while (picking)
+ return
 end -- enemy attack, picking function
 
 -- add 50 particle explosion
@@ -705,15 +694,14 @@ end -- update_game
 -- draw
 function draw_game()
  cls(0)
+ -- draw all stars
  for s in all (stars) do
    -- default color is light grey
    local color=6
-
    -- somewhat slow stars are grey
    if (s[3] < 1.5) color=13
    -- slowest stars are dark blue
    if (s[3] < 1) color=1
-
    -- super fast stars are a streak
    if (s[3] > 1.9) then
     line(s[1],s[2],s[1],s[2]-4,color)
@@ -726,45 +714,33 @@ function draw_game()
    -- pset(s[1],s[2], flr(rnd(3)+5) )
  end
 
+ -- generic sprite drawing function
  draw_junk(bullets)
  draw_junk(enemies)
 
+ -- logic to draw ship
  if (lifes > 0) then
-
- if (invuln<=0) then
-  spr(ship.pix,ship.x,ship.y)
-  spr(flamespr,ship.x,ship.y+6)
- else
-  -- blink ship while invulnerable
-  if sin(t/3)<0.5 then
+  if (invuln<=0) then
    spr(ship.pix,ship.x,ship.y)
    spr(flamespr,ship.x,ship.y+6)
+  else
+   -- blink ship while invulnerable
+   if sin(t/3)<0.5 then
+    spr(ship.pix,ship.x,ship.y)
+    spr(flamespr,ship.x,ship.y+6)
+   end
   end
- end
-
  end
 
  -- muzzle flashes
  if(muzzle>0) circfill(ship.x+3,ship.y, muzzle, 7)
  if(muzzle>0) circfill(ship.x+4,ship.y, muzzle, 7)
 
- -- draw explosions
- -- for pop in all(explosions) do
- --   spr(pop.sprites[flr(pop.age)], pop.x, pop.y, 2, 2)
- --   pop.age+=0.4
- --   if (pop.age > #pop.sprites) del(explosions,pop)
- -- end
-
  -- draw particles
  for p in all(particles) do
    local pcolor=0
    local psize=0
-
-   if (p.blue) then
-     pcolor,psize=particle_age(p.age, "blue")
-   else
-     pcolor,psize=particle_age(p.age, "red")
-   end
+   pcolor,psize=particle_age(p.age, p.blue)
 
    if p.spark then
     pset(p.x,p.y,7) -- sparks always white
@@ -797,10 +773,12 @@ function draw_game()
    end
  end
 
+ -- print score
  print_center("score: "..score, 1, 12)
+ -- debug text with enemy count
  print(#enemies, 100,1,9)
 
-end -- draw_game
+end -- end draw_game()
 
 function draw_start()
  cls(1)
@@ -813,7 +791,7 @@ function draw_start()
  end
 
  print_center("rexroof games shump", 60, blink())
-end
+end -- end draw_start()
 
 function draw_over()
  draw_game()

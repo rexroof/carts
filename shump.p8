@@ -3,31 +3,6 @@ version 41
 __lua__
 -- main
 
--- new sprite move function
---  move towards target location using sy and sx
---  set location to target if overshot?
-
--- add occasional enemy attack
-
--- implement explode logic
--- make janky enemies bump into each other
-
--- homework
-  -- try adding explosions?
-    -- sprite animation?
-    -- circle fills?
-    --  rectangle fills? :D
-    -- pixel explosion based on enemy sprite?
-
--- todo
--- add bullet dmg
--- bullet hitbox
--- expand objects
--- add invulnerablity frames to ship
--- add bullet rate/timer to ship
--- some ships should have charge shots?
--- shooting powerups should change them.  randomly? chance to destroy them?
-
 function _init()
  cls(0)
  t=0
@@ -58,56 +33,39 @@ end  -- end _update
 -->8
 -- tools
 
-function particle_age_red(age)
- local color=7
+-- blue or red particle colors, fizzing out with age
+function particle_age(age, colorset)
+ local colors={
+  red={ 7,10, 9,8, 2,5},
+  blue={7, 6,12,3,13,1},
+ }
+ local set=colors.red
+ if (colorset == "blue") set=colors.blue
+ local color=set[0]
  local size=4
- if (age>5) then
-  color=10
-  size=3
- end
- if (age>10) then
-  color=9
-  size=2
- end
- if (age>15) then
-  color=8
-  size=1
- end
- if (age>20) then
-  color=2
-  size=1
- end
- if (age>25) then
-  color=5
-  size=1
- end
- return color, size
-end
 
-function particle_age_blue(age)
- local color=7
- local size=4
  if (age>5) then
-  color=6
+  color=set[1]
   size=3
  end
  if (age>10) then
-  color=12
+  color=set[2]
   size=2
  end
  if (age>15) then
-  color=3
+  color=set[3]
   size=1
  end
  if (age>20) then
-  color=13
+  color=set[4]
   size=1
  end
  if (age>25) then
-  color=1
+  color=set[5]
   size=1
  end
- return color, size
+
+ return color,size
 end
 
 function small_shockwave(x,y)
@@ -803,9 +761,9 @@ function draw_game()
    local psize=0
 
    if (p.blue) then
-     pcolor,psize=particle_age_blue(p.age)
+     pcolor,psize=particle_age(p.age, "blue")
    else
-     pcolor,psize=particle_age_red(p.age)
+     pcolor,psize=particle_age(p.age, "red")
    end
 
    if p.spark then

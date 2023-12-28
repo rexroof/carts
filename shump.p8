@@ -221,8 +221,6 @@ function enemy_mission(e)
  elseif e.mission == "attack" then
    e:attack()
    move_sprite(e)
-   -- remove if off screen
-   if (e.y > 129) del(enemies,e)
  elseif e.mission == "chill" then
   -- should we try blocking hits to an above enemy?
   return
@@ -355,7 +353,6 @@ function game_start()
    hp=2,
    sy=1.7,
    attack = function(self)
-     -- use move function to move enemy
      self.sx=sin(t/45)
      -- make enemies trend towards center of screen
      if (self.x<32) self.sx+=1-(self.x/32)
@@ -367,7 +364,6 @@ function game_start()
    hp=3,
    sy=2.5,
    attack = function(self)
-     -- use move function to move enemy
      self.sx=sin(t/20)
      -- make enemies trend towards center of screen
      if (self.x<32) self.sx+=1-(self.x/32)
@@ -385,9 +381,9 @@ function game_start()
      if ship.y<=self.y then
       self.sy=0
       if ship.x < self.x then
-       self.sx=-1
+       self.sx=-2.1
       else
-       self.sx=1
+       self.sx=2.1
       end
      end
     end
@@ -396,9 +392,8 @@ function game_start()
   bubble={
    pix={56,57,58,59},
    hp=5,
-   sy=1.5,
+   sy=0.9,
    attack = function(self)
-     -- use move function to move enemy
      self.sx=sin(t/80)
      -- make enemies trend towards center of screen
      if (self.x<32) self.sx+=1-(self.x/32)
@@ -410,15 +405,13 @@ function game_start()
    h=2, w=2,
    hitbox={h=14,w=13},
    hp=20,
-   sy=0.8,
    ani_speed=0.1,
    pal_shift=0,
+   sy=0.35,
    attack = function(self)
-     -- use move function to move enemy
-     self.sx=sin(t/5)
-     -- make enemies trend towards center of screen
-     if (self.x<32) self.sx+=1-(self.x/32)
-     if (self.x>88) self.sx-=(self.x-88)/32
+     if (self.y>110) then
+      self.sy=1
+     end
    end,
   }
  }
@@ -676,11 +669,13 @@ function update_game()
  for e in all (enemies) do
    enemy_mission(e)
 
-   -- if enemy has exited to the bottom
-   if (e.y > 130) then
-     -- e.y=-10
-     -- delete it, it's gone!
-     del(enemies, e)
+   -- if enemies are not flying in
+   if (e.mission != "flyin") then
+    -- if enemy has exited to the bottom
+    if (e.y > 130) del(enemies, e)
+    -- or sides
+    if (e.x > 138) del(enemies, e)
+    if (e.x < -10) del(enemies, e)
    end
 
    -- move this into an e:update function?

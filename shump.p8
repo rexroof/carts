@@ -219,15 +219,21 @@ function enemy_mission(e)
      e.mission="chill"
    end
  elseif e.mission == "attack" then
-   -- go down if attacking
-   e.y+=1
-   -- delete if off screen
+   -- use move function to move enemy
+   move_sprite(e)
+   -- remove if off screen
    if (e.y > 129) del(enemies,e)
  elseif e.mission == "chill" then
   -- should we try blocking hits to an above enemy?
   return
  end
 end  -- end enemy_mission
+
+-- move a sprite on screen using speeds in object
+function move_sprite(obj)
+  obj.x+=obj.sx
+  obj.y+=obj.sy
+end
 
 -- check if there are enemies blocking below
 function blocked(e)
@@ -344,15 +350,16 @@ function game_start()
  wave=1
 
  enemy_types={
-  fly={pix={21,22,23}, hp=2},
-  mushroom={pix={48,49,50,51}, hp=3},
-  blade={pix={52,53,54,55}, hp=4},
-  bubble={pix={56,57,58,59}, hp=5},
+  fly={pix={21,22,23}, hp=2, sy=1.7},
+  mushroom={pix={48,49,50,51}, hp=3, sy=1.9},
+  blade={pix={52,53,54,55}, hp=4, sy=2.1},
+  bubble={pix={56,57,58,59}, hp=5, sy=1.5},
   ignokt={
    pix={46,44},
    h=2, w=2,
    hitbox={h=14,w=13},
    hp=20,
+   sy=1.2,
    ani_speed=0.1,
    pal_shift=0
   }

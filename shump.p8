@@ -229,29 +229,18 @@ function enemy_mission(e)
  end
 end  -- end enemy_mission
 
--- pick an enemy and attack
-function enemy_attack()
- -- don't do anything if not in game mode
- if (mode != "game") then
-  return
- end
- -- if no enemies, return
- if (#enemies<5) then
-  return
- end
- -- grab random enemy
- e=rnd(enemies)
- -- if we are chillin, see if we are blocked, else attack
- if (e.mission == "chill") then
-  -- make a copy of our enemy to test
+-- check if there are enemies blocking below
+function blocked(e)
+  local blocked=false
+  -- make copy of enemy to test
   local ecopy={x=e.x,y=e.y}
+  -- set default hitbox, used for stepping down screen
   if (not(e.hitbox)) then
    ecopy.hitbox={h=8,w=8}
   else
    ecopy.hitbox={h=e.hitbox.h,w=e.hitbox.w}
   end
-  -- move every hitbox steps until we're off screen or hit something
-  local blocked=false
+  -- move down by hitbox steps until off screen
   while (ecopy.y < 128) do
    ecopy.y+=ecopy.hitbox.h
    for b in all(enemies) do
@@ -259,14 +248,24 @@ function enemy_attack()
     if (collide(ecopy,b)) blocked=true
    end
   end
-  -- if not blocked, tell enemy to attack
-  if (not blocked) then
-   e.mission="attack"
-  end
- end -- end if mission == chill
- -- if we have fewer enemies, we only get one random shot to attack
- -- if (#enemies < 5) picking=false
-return
+  -- true/false if blocked
+  return blocked
+end
+
+-- pick an enemy and attack
+function enemy_attack()
+ -- don't do anything if not in game mode
+ if (mode != "game") return
+ -- if no enemies, return
+ if (#enemies == 0) return
+
+ -- grab random enemy
+ e=rnd(enemies)
+ -- only chilling enemies can attack
+ if (e.mission == "chill") then
+   if (not blocked(e)) e.mission="attack"
+ end
+ return
 end -- enemy attack, picking function
 
 -- add 50 particle explosion
@@ -367,7 +366,7 @@ function game_start()
 
  waves={
   -- wave one
-  { attack_speed=60,
+  { attack_speed=90,
     patterns={
      {f, f, f, f, f, f, f, f, f, f, f},
      {f, f, f, f, f, f, f, f, f, f, f},
@@ -376,7 +375,7 @@ function game_start()
   },
 
  -- wave two
- { attack_speed=50,
+ { attack_speed=75,
  patterns={
   {m, m, 0, 0, f, f, f, 0, 0, f, m},
   {m, m, 0, 0, m, m, m, 0, 0, f, m},
@@ -384,34 +383,34 @@ function game_start()
  },
 },
 
-   -- wave three
-   { attack_speed=40,
-     patterns={
-      {d, d, d, d, d, d, d, d, d, d, d},
-      {m, m, m, 0, 0, 0, 0, 0, m, m, m},
-      {m, m, m, 0, 0, 0, 0, 0, m, m, m},
-     },
+-- wave three
+{ attack_speed=55,
+patterns={
+ {d, d, d, d, d, d, d, d, d, d, d},
+ {m, m, m, 0, 0, 0, 0, 0, m, m, m},
+ {m, m, m, 0, 0, 0, 0, 0, m, m, m},
+},
    },
 
    -- wave four
    { attack_speed=30,
-     patterns={
-      {b, b, b, b, 0, 0, 0, b, b, b, b},
-      {b, 0, b, 0, b, 0, b, 0, b, 0, b},
-      {0, b, 0, b, 0, b, 0, b, 0, b, 0},
-     },
+   patterns={
+    {b, b, b, b, 0, 0, 0, b, b, b, b},
+    {b, 0, b, 0, b, 0, b, 0, b, 0, b},
+    {0, b, 0, b, 0, b, 0, b, 0, b, 0},
    },
+  },
 
-   -- wave five
-   { attack_speed=20,
-     patterns={
-      {0, 0, 0, 0, 0, i, 0, 0, 0, 0, 0},
-      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-     },
-   },
+  -- wave five
+  { attack_speed=20,
+  patterns={
+   {0, 0, 0, 0, 0, i, 0, 0, 0, 0, 0},
+   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+  },
+ },
 
-  }
+ }
 
  heart={pix=14,x=1,y=1}
  emptyheart={pix=13,x=10,y=1}
@@ -603,13 +602,13 @@ function update_game()
        sfx(2) -- death sound
       end
     end
-  end
+  end -- end for e in all enemies
 
-  -- every X frames, pick an enemy to attack
-  local attack_speed=waves[wave].attack_speed
-  if (t%attack_speed == 0) enemy_attack()
+ end -- end for b in bullets
 
- end
+ -- every X frames, pick an enemy to attack
+ local attack_speed=waves[wave].attack_speed
+ if (t%attack_speed == 0) enemy_attack()
 
  -- cycle through all enemies
  for e in all (enemies) do

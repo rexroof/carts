@@ -219,7 +219,7 @@ function enemy_mission(e)
      e.mission="chill"
    end
  elseif e.mission == "attack" then
-   -- use move function to move enemy
+   e:attack()
    move_sprite(e)
    -- remove if off screen
    if (e.y > 129) del(enemies,e)
@@ -350,18 +350,76 @@ function game_start()
  wave=1
 
  enemy_types={
-  fly={pix={21,22,23}, hp=2, sy=1.7},
-  mushroom={pix={48,49,50,51}, hp=3, sy=1.9},
-  blade={pix={52,53,54,55}, hp=4, sy=2.1},
-  bubble={pix={56,57,58,59}, hp=5, sy=1.5},
+  fly={
+   pix={21,22,23},
+   hp=2,
+   sy=1.7,
+   attack = function(self)
+     -- use move function to move enemy
+     self.sx=sin(t/45)
+     -- make enemies trend towards center of screen
+     if (self.x<32) self.sx+=1-(self.x/32)
+     if (self.x>88) self.sx-=(self.x-88)/32
+   end,
+  },
+  mushroom={
+   pix={48,49,50,51},
+   hp=3,
+   sy=2.5,
+   attack = function(self)
+     -- use move function to move enemy
+     self.sx=sin(t/20)
+     -- make enemies trend towards center of screen
+     if (self.x<32) self.sx+=1-(self.x/32)
+     if (self.x>88) self.sx-=(self.x-88)/32
+   end,
+  },
+  blade={
+   pix={52,53,54,55},
+   hp=4,
+   sy=2.1,
+   attack = function(self)
+    -- fly down until at ship, then towards ship
+    if self.sx == 0 then
+     -- if we are lower than ship
+     if ship.y<=self.y then
+      self.sy=0
+      if ship.x < self.x then
+       self.sx=-1
+      else
+       self.sx=1
+      end
+     end
+    end
+   end,
+  },
+  bubble={
+   pix={56,57,58,59},
+   hp=5,
+   sy=1.5,
+   attack = function(self)
+     -- use move function to move enemy
+     self.sx=sin(t/80)
+     -- make enemies trend towards center of screen
+     if (self.x<32) self.sx+=1-(self.x/32)
+     if (self.x>88) self.sx-=(self.x-88)/32
+   end,
+  },
   ignokt={
    pix={46,44},
    h=2, w=2,
    hitbox={h=14,w=13},
    hp=20,
-   sy=1.2,
+   sy=0.8,
    ani_speed=0.1,
-   pal_shift=0
+   pal_shift=0,
+   attack = function(self)
+     -- use move function to move enemy
+     self.sx=sin(t/5)
+     -- make enemies trend towards center of screen
+     if (self.x<32) self.sx+=1-(self.x/32)
+     if (self.x>88) self.sx-=(self.x-88)/32
+   end,
   }
  }
 
@@ -435,9 +493,6 @@ patterns={
  -- explosions={}
  particles={}
  shockwaves={}
- -- multiple enemies? one after another over time? pattern?
- -- different types of enemies. new animation
- -- new property to enemies?  speed?  movement?
 
 end
 
@@ -621,18 +676,6 @@ function update_game()
  for e in all (enemies) do
    enemy_mission(e)
 
-   -- if any enemy hit edge of screen, change all enemies directions
-   if (e.x > 120) then
-     for x in all (enemies) do
-       -- x.y+=1
-       -- x.sx=-1
-     end
-   elseif (e.x < 0) then
-     for x in all (enemies) do
-       -- x.y+=1
-       -- x.sx=1
-     end
-   end
    -- if enemy has exited to the bottom
    if (e.y > 130) then
      -- e.y=-10

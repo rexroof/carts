@@ -137,6 +137,7 @@ end
 -- generic sprite draw function
 function draw_junk(objs)
  for o in all(objs) do
+	 local tmpx,tmpy = o.x,o.y
   local height=o.h or 1 -- for wider/taller sprites
   local width=o.w or 1  -- for wider/taller sprites
   if (o.pal_shift != nil) then
@@ -144,6 +145,10 @@ function draw_junk(objs)
     pal(i,(i+o.pal_shift))
    end
   end
+		if (o.shake != nil) and (o.shake>0) then
+			o.shake-=1
+			tmpx+=sin(t/10)
+		end
   if (o.flash != nil) then
    if o.flash > 0 then
     -- manipulate pallete if we're flashing
@@ -156,7 +161,7 @@ function draw_junk(objs)
   end
   -- o.ani tracks which frame of the sprite animation we're on
   if (not(o.ani)) o.ani=1
-  spr(o.pix[flr(o.ani)], o.x, o.y, height, width)
+  spr(o.pix[flr(o.ani)], tmpx, tmpy, height, width)
   pal() -- reset pallete
  end
 end
@@ -174,8 +179,9 @@ function new_enemy(input)
    sx=0,sy=0,        -- x&y speed
    hp=rnd(3)+1,      -- health
    wait=0,
-   mission="flyin",  -- initial state
-   flash=0           -- if we're flashing after hit
+			mission="flyin",  -- initial state
+			shake=0,          -- we shake before an attack
+			flash=0           -- if we're flashing after hit
  }
  -- override all presets with object that was passed in
  for k,v in pairs(input) do
@@ -267,7 +273,12 @@ function enemy_attack()
  e=rnd(enemies)
  -- only chilling enemies can attack
  if (e.mission == "chill") then
-   if (not blocked(e)) e.mission="attack"
+   if (not blocked(e)) then
+    e.mission="attack"
+				e.ani_speed*=2
+				e.shake=25
+				e.wait=25
+   end
  end
  return
 end -- enemy attack, picking function

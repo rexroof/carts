@@ -232,41 +232,41 @@ end  -- end enemy_mission
 -- pick an enemy and attack
 function enemy_attack()
  -- don't do anything if not in game mode
- if (mode != "game") return
+ if (mode != "game") then
+  return
+ end
  -- if no enemies, return
- if (#enemies<5) return
- local picking=true
- while (picking) do
-  -- grab random enemy
-  e=rnd(enemies)
-  -- if we are chillin, see if we are blocked, else attack
-  if (e.mission == "chill") then
-   -- make a copy of our enemy to test
-   local ecopy={x=e.x,y=e.y}
-   if (not(e.hitbox)) then
-    ecopy.hitbox={h=8,w=8}
-   else
-    ecopy.hitbox={h=e.hitbox.h,w=e.hitbox.w}
+ if (#enemies<5) then
+  return
+ end
+ -- grab random enemy
+ e=rnd(enemies)
+ -- if we are chillin, see if we are blocked, else attack
+ if (e.mission == "chill") then
+  -- make a copy of our enemy to test
+  local ecopy={x=e.x,y=e.y}
+  if (not(e.hitbox)) then
+   ecopy.hitbox={h=8,w=8}
+  else
+   ecopy.hitbox={h=e.hitbox.h,w=e.hitbox.w}
+  end
+  -- move every hitbox steps until we're off screen or hit something
+  local blocked=false
+  while (ecopy.y < 128) do
+   ecopy.y+=ecopy.hitbox.h
+   for b in all(enemies) do
+    -- if we would hit another enemy, we are blocked
+    if (collide(ecopy,b)) blocked=true
    end
-   -- move every hitbox steps until we're off screen or hit something
-   local blocked=false
-   while (ecopy.y < 128) do
-    ecopy.y+=ecopy.hitbox.h
-    for b in all(enemies) do
-     -- if we would hit another enemy, we are blocked
-     if (collide(ecopy,b)) blocked=true
-    end
-   end
-   -- if not blocked, tell enemy to attack
-   if (not blocked) then
-    e.mission="attack"
-    picking=false  -- yay, found someone!
-   end
-  end -- end if mission == chill
-  -- if we have fewer enemies, we only get one random shot to attack
-  if (#enemies < 5) picking=false
- end -- end while (picking)
- return
+  end
+  -- if not blocked, tell enemy to attack
+  if (not blocked) then
+   e.mission="attack"
+  end
+ end -- end if mission == chill
+ -- if we have fewer enemies, we only get one random shot to attack
+ -- if (#enemies < 5) picking=false
+return
 end -- enemy attack, picking function
 
 -- add 50 particle explosion
@@ -775,8 +775,8 @@ function draw_game()
 
  -- print score
  print_center("score: "..score, 1, 12)
- -- debug text with enemy count
- print(#enemies, 100,1,9)
+ -- debug text
+ -- print(#enemies, 100,1,9)
 
 end -- end draw_game()
 

@@ -2,7 +2,18 @@ pico-8 cartridge // http://www.pico-8.com
 version 41
 __lua__
 -- main
-
+--
+-- bullet collision detection.  proper hitbox?  or use "bullet mode"
+-- add generic update function to all sprites?
+-- flash enemies when they fire, or muzzle flash?
+-- add sound effect for firing enemy bullet
+-- add logic where some enemies fire occasionally instead of attack
+--   - attack can be fire or fly down.  random calculation added to enemy object
+--  draw new bullets
+--  sound effects for each bullet?
+--
+--
+--
 function _init()
  cls(0)
  t=0
@@ -186,14 +197,23 @@ function draw_particles(ptable)
  end
 end -- end draw_particles
 
--- fire an enemy bullet
-function fire_bullet(spec)
-   local newbullet={pix={113,114,115},hitbox={h=6,w=4},
-                     x=ship.x+2,y=ship.y-1,
-                     sx=0,sy=0,spd=4,
-                     ani=1,ani_speed=0}
-   add(enemy_bullets, newbullet)
-end
+-- generate a new bullet and add it to bullets table
+function fire_bullet(input)
+ local spec = {
+   pix={113,114,115},
+   hitbox={h=6,w=6},
+   x=0,
+   y=0,
+   sx=0,sy=0,spd=6,
+   ani=1,
+   ani_speed=0.4
+ }
+ -- override spec with object passed in
+ for k,v in pairs(input) do
+   spec[k]=v
+ end
+ add(enemy_bullets, spec)
+end -- end fire_bullet
 
 -- generate a new enemy and return a table of it
 function new_enemy(input)
@@ -403,6 +423,7 @@ function game_start()
        self.ani_speed*=2
        self.shake=40
        self.wait=self.shake
+       fire_bullet({x=self.x+3, y=self.y+5, sy=2})
      end
    end,
    attack = function(self)
@@ -744,6 +765,41 @@ function update_game()
 
  end -- end for b in bullets
 
+ -- cycle through all enemy bullets
+ for b in all (enemy_bullets) do
+  b.y+=b.sy
+  b.x+=b.sx
+  b.ani+=b.ani_speed
+
+  if (flr(b.ani) > #b.pix)  then
+    b.ani=1
+  end
+
+  -- if bullet is off screen, delete it.
+  if (b.x < -10) del(enemy_bullets,b)
+  if (b.x > 130) del(enemy_bullets,b)
+  if (b.y < -10) del(enemy_bullets,b)
+  if (b.y > 130) del(enemy_bullets,b)
+
+  -- todo: test if bullets have hit ship
+  -- for e in all (enemies) do
+    -- if bullet hits enemy
+    -- if (collide(b,e)) then
+      -- small_shockwave(b.x,b.y)
+      -- small_sparks(e.x+4,e.y+7)
+      -- del(bullets, b)  -- someday bullets may have health/peircing?
+      -- e.hp-=1
+      -- sfx(3)  -- hit sound
+      -- e.flash=3
+      -- if enemy is dying
+      -- if e.hp <= 0 then
+       -- e:kill()
+      -- end
+    -- end
+  -- end -- end for e in all enemies
+
+ end -- end for b in bullets
+
  -- every X frames, pick an enemy to attack
  local attack_speed=waves[wave].attack_speed
  if (t%attack_speed == 0) enemy_attack()
@@ -990,7 +1046,7 @@ __sfx__
 000100000000000000000002a1502435021150193501515014350101500b3500815007350061500615006150061500615006150081500b1500e15014150171501915000000000000000000000000000000000000
 1a03000038650336500b6500a65033650336500b65008650056500465003650006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600
 5d040000273500a320080001d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00020000015530655305553105530c553125530050002500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000

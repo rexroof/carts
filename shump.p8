@@ -137,7 +137,7 @@ end
 -- generic sprite draw function
 function draw_junk(objs)
  for o in all(objs) do
-	 local tmpx,tmpy = o.x,o.y
+  local tmpx,tmpy = o.x,o.y
   local height=o.h or 1 -- for wider/taller sprites
   local width=o.w or 1  -- for wider/taller sprites
   if (o.pal_shift != nil) then
@@ -145,11 +145,10 @@ function draw_junk(objs)
     pal(i,(i+o.pal_shift))
    end
   end
-		if (o.shake != nil) and (o.shake>0) then
-			o.shake-=1
-			tmpx+=sin(t/10)
-
-		end
+  if (o.shake != nil) and (o.shake>0) then
+   o.shake-=1
+   if (t%4<2) tmpx+=1
+  end
   if (o.flash != nil) then
    if o.flash > 0 then
     -- manipulate pallete if we're flashing
@@ -180,9 +179,9 @@ function new_enemy(input)
    sx=0,sy=0,        -- x&y speed
    hp=rnd(3)+1,      -- health
    wait=0,
-			mission="flyin",  -- initial state
-			shake=0,          -- we shake before an attack
-			flash=0           -- if we're flashing after hit
+   mission="flyin",  -- initial state
+   shake=0,          -- we shake before an attack
+   flash=0           -- if we're flashing after hit
  }
  -- override all presets with object that was passed in
  for k,v in pairs(input) do

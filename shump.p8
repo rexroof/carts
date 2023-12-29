@@ -181,7 +181,16 @@ function new_enemy(input)
    wait=0,
    mission="flyin",  -- initial state
    shake=0,          -- we shake before an attack
-   flash=0           -- if we're flashing after hit
+   flash=0, -- if we're flashing after hit
+   kill = function(self)
+    -- kill steps
+    blast(self.x+4,self.y+4) -- should become new explosion method
+    -- add(explosions, new_explosion(e.x-4,e.y-4))
+    score+=15 -- todo: make this variable
+    sfx(2) -- death sound
+    del(enemies, self) -- remove me from enemies list
+    if (self.mission == "attack") enemy_attack() -- trigger new attack if i was attacking
+   end
  }
  -- override all presets with object that was passed in
  for k,v in pairs(input) do
@@ -222,7 +231,7 @@ function enemy_mission(e)
      -- snap to your actual position
      e.y = e.target.y
      e.x = e.target.x
-     e.mission="chill"
+     e:set_mission("chill")
    end
  elseif e.mission == "attack" then
    e:attack()
@@ -698,11 +707,7 @@ function update_game()
       e.flash=3
       -- if enemy is dying
       if e.hp <= 0 then
-       -- add(explosions, new_explosion(e.x-4,e.y-4))
-       blast(e.x+4,e.y+4)
-       del(enemies, e)
-       score+=15
-       sfx(2) -- death sound
+       e:kill()
       end
     end
   end -- end for e in all enemies

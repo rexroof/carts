@@ -521,7 +521,7 @@ patterns={
 
  heart={pix=14,x=1,y=1}
  emptyheart={pix=13,x=10,y=1}
- ship={pix=2,x=64,y=84,sx=0,sy=0}
+ ship={pix=2,x=64,y=84,sx=0,sy=0,firing_speed=8}
  invuln=0
  flamespr=5
  muzzle=0
@@ -661,7 +661,7 @@ function update_game()
    add(bullets,newbullet)
    sfx(0)
    muzzle=5
-   bullet_timer=8
+   bullet_timer=ship.firing_speed
   end
  end
  if (bullet_timer>0) bullet_timer-=1

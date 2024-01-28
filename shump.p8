@@ -3,8 +3,9 @@ version 41
 __lua__
 -- main
 --
--- bullet collision detection.  proper hitbox?  or use "bullet mode"
+-- blocked logic is broken
 -- add generic update function to all sprites?
+--   -- generic sprite prototype for all sprites?
 -- flash enemies when they fire, or muzzle flash?
 -- add sound effect for firing enemy bullet
 -- add logic where some enemies fire occasionally instead of attack
@@ -12,7 +13,7 @@ __lua__
 --  draw new bullets
 --  sound effects for each bullet?
 --
---
+-- review hitboxes
 --
 function _init()
  cls(0)
@@ -131,17 +132,20 @@ end
 
 -- return true if two objects have collided
 function collide(a,b)
- -- hitbox defaults to 7x7
- if (not(a.hitbox)) a.hitbox={h=7,w=7}
- if (not(b.hitbox)) b.hitbox={h=7,w=7}
+ -- hitbox defaults to 7x7, starting at origin
+ -- if (not(a.hitbox)) a.hitbox={x=0,y=0h=7,w=7}
+ -- if (not(b.hitbox)) b.hitbox={x=0,y=0h=7,w=7}
+ if (not(a.hitbox)) stop("missing hitbox: a ")
+ if (not(b.hitbox)) stop("missing hitbox: b ")
+ --
  -- if a top > b bottom
- if (a.y > b.y+b.hitbox.w-1) return false
+ if (a.y+a.hitbox.y > b.y+b.hitbox.w-1) return false
  -- if b top > a bottom
- if (b.y > a.y+a.hitbox.h-1) return false
+ if (b.y+b.hitbox.y > a.y+a.hitbox.h-1) return false
  -- if a left > b right
- if (a.x > b.x+b.hitbox.w-1) return false
+ if (a.x+a.hitbox.x > b.x+b.hitbox.w-1) return false
  -- if b left > a right
- if (b.x > a.x+a.hitbox.w-1) return false
+ if (b.x+b.hitbox.x > a.x+a.hitbox.w-1) return false
  return true
 end
 
@@ -201,7 +205,7 @@ end -- end draw_particles
 function fire_bullet(input)
  local spec = {
    pix={113,114,115},
-   hitbox={h=6,w=6},
+   hitbox={x=2,y-2,h=2,w=2},
    x=0,
    y=0,
    sx=0,sy=0,spd=6,
@@ -237,8 +241,8 @@ function new_enemy(input)
     -- add(explosions, new_explosion(e.x-4,e.y-4))
     score+=15 -- todo: make this variable
     sfx(2) -- death sound
-    del(enemies, self) -- remove me from enemies list
     if (self.mission == "attack") enemy_attack() -- trigger new attack if i was attacking
+    del(enemies, self) -- remove me from enemies list
    end
  }
  -- override all presets with object that was passed in
@@ -302,15 +306,16 @@ function blocked(e)
   local blocked=false
   -- make copy of enemy to test
   local ecopy={x=e.x,y=e.y}
+  e.pal_shift+=1
   -- set default hitbox, used for stepping down screen
   if (not(e.hitbox)) then
-   ecopy.hitbox={h=8,w=8}
+   ecopy.hitbox={x=0,y=0,h=8,w=8}
   else
-   ecopy.hitbox={h=e.hitbox.h,w=e.hitbox.w}
+   ecopy.hitbox={x=e.hitbox.x,y=e.hitbox.y,h=e.hitbox.h,w=e.hitbox.w}
   end
   -- move down by hitbox steps until off screen
   while (ecopy.y < 128) do
-   ecopy.y+=ecopy.hitbox.h
+   ecopy.y+=(ecopy.hitbox.h+ecopy.hitbox.y)
    for b in all(enemies) do
     -- if we would hit another enemy, we are blocked
     if (collide(ecopy,b)) blocked=true
@@ -415,6 +420,7 @@ function game_start()
  enemy_types={
   fly={
    pix={21,22,23},
+   hitbox={x=0,y=0,h=6,w=8},
    hp=1,
    sy=1.7,
    set_mission = function(self, new)
@@ -435,6 +441,7 @@ function game_start()
   },
   mushroom={
    pix={48,49,50,51},
+   hitbox={x=1,y=1,h=6,w=6},
    hp=2,
    sy=2.5,
    set_mission = function(self, new)
@@ -454,6 +461,7 @@ function game_start()
   },
   blade={
    pix={52,53,54,55},
+   hitbox={x=1,y=0,h=8,w=8},
    hp=3,
    sy=2.1,
    set_mission = function(self, new)
@@ -481,6 +489,7 @@ function game_start()
   },
   bubble={
    pix={56,57,58,59},
+   hitbox={x=0,y=0,h=8,w=8},
    hp=6,
    sy=0.9,
    set_mission = function(self, new)
@@ -502,7 +511,7 @@ function game_start()
   ignokt={
    pix={46,44},
    h=2, w=2,
-   hitbox={h=14,w=13},
+   hitbox={x=1,y=5,h=12,w=10},
    hp=15,
    ani_speed=0.1,
    pal_shift=0,
@@ -579,7 +588,15 @@ patterns={
 
  heart={pix=14,x=1,y=1}
  emptyheart={pix=13,x=10,y=1}
- ship={pix=2,x=64,y=84,sx=0,sy=0,firing_speed=8}
+ ship={
+   pix=2,
+   x=64,y=84,
+   hitbox={
+     x=2,y=3,
+     h=3,w=4
+   },
+   sx=0,sy=0,
+   firing_speed=8}
  invuln=0
  flamespr=5
  muzzle=0
@@ -713,7 +730,7 @@ function update_game()
  -- shoot a bullet!
  if btn(5) then
   if bullet_timer <= 0 then
-   local newbullet={pix={17},hitbox={h=6,w=4},
+   local newbullet={pix={17},hitbox={x=0,y=0,h=4,w=4},
                      x=ship.x+2,y=ship.y-1,
                      sx=0,sy=0,spd=4,
                      ani=1,ani_speed=0}

@@ -205,7 +205,7 @@ end -- end draw_particles
 function fire_bullet(input)
  local spec = {
    pix={113,114,115},
-   hitbox={x=2,y-2,h=2,w=2},
+   hitbox={x=2,y=2,h=2,w=2},
    x=0,
    y=0,
    sx=0,sy=0,spd=6,
@@ -234,7 +234,9 @@ function new_enemy(input)
    wait=0,
    mission="flyin",  -- initial state
    shake=0,          -- we shake before an attack
-   flash=0, -- if we're flashing after hit
+   flash=0,          -- if we're flashing after hit
+   takehit = function(self) -- take damage
+   end,
    kill = function(self)
     -- kill steps
     blast(self.x+4,self.y+4) -- should become new explosion method
@@ -420,7 +422,7 @@ function game_start()
  enemy_types={
   fly={
    pix={21,22,23},
-   hitbox={x=0,y=0,h=6,w=8},
+   hitbox={x=1,y=1,h=6,w=8},
    hp=1,
    sy=1.7,
    set_mission = function(self, new)
@@ -596,7 +598,17 @@ patterns={
      h=3,w=4
    },
    sx=0,sy=0,
-   firing_speed=8}
+   firing_speed=8,
+   takehit = function(self)
+     -- if we are invulnerable, skip
+     if (self.invuln > 0) return false
+     blast(self.x,self.y,true)  -- create explosion, blue is true
+     lifes-=1
+     sfx(1)
+     self.invuln=200 -- make me invulnerable
+     return true
+   end
+ }
  invuln=0
  flamespr=5
  muzzle=0
@@ -798,6 +810,10 @@ function update_game()
   if (b.y < -10) del(enemy_bullets,b)
   if (b.y > 130) del(enemy_bullets,b)
 
+  -- if bullet has hit ship
+  if (collide(ship, b)) then
+  end
+
   -- todo: test if bullets have hit ship
   -- for e in all (enemies) do
     -- if bullet hits enemy
@@ -844,12 +860,10 @@ function update_game()
    if (invuln>0) invuln-=1
 
    -- if this enemy has hit ship
-   if (invuln<=0) and (collide(ship,e)) then
-     blast(ship.x,ship.y,true)  -- blue is true
-     lifes-=1
+   if (collide(ship,e) and ship:takehit()) then -- takehit returns true if we took damage
      e.hp-=3
-
      -- repeated from above, need to refactor
+     -- kill enemy if it is dead
      if e.hp <= 0 then
       -- add(explosions, new_explosion(e.x-4,e.y-4))
       blast(e.x+4,e.y+4)
@@ -857,10 +871,9 @@ function update_game()
       score+=15
       sfx(2) -- death sound
      end
-
-     sfx(1)
-     invuln=200  -- frames of invulnerability
    end
+
+
    if (lifes<=0) then
      mode="over" -- this should be a function inside ship obj?
      lockout=t+30

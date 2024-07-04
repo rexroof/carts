@@ -778,7 +778,7 @@ function update_game()
   -- test if bullets have hit enemies
   for e in all (enemies) do
     -- if bullet hits enemy
-    if (collide(b,e)) then
+    if (collide(b,e) and e:takehit()) then -- takehit returns true if took damage
       small_shockwave(b.x,b.y)
       small_sparks(e.x+4,e.y+7)
       del(bullets, b)  -- someday bullets may have health/peircing?

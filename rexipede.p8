@@ -21,14 +21,14 @@ __lua__
 function _init()
   cls(0)
   frames=0
-  sprites={}
+  mushrooms=populate_mushrooms()
   player=new_player()
 end
 
 function _draw()
   cls(0)
-  for s in all(sprites) do
-    s:draw()
+  for m in all(mushrooms) do
+    m:draw()
   end
   player:draw()
 end
@@ -48,11 +48,10 @@ function _update()
   player:update()
 end
 
-function new_player()
+function new_dart() -- my projectile
  return {
-   x=60, y=120, -- position
+   x=0, y=0, -- position
    sx=0, sy=0,  -- movement speed
-   pix=1,
    update = function(self)
      self.x+=self.sx
      self.y+=self.sy
@@ -63,9 +62,100 @@ function new_player()
      if (self.y < 80) self.y=80   -- upper bounds
    end,
    draw = function(self)
+     line(self.x, self.y, self.x, self.y+4, 8) -- short red line
+   end,
+ }
+end
+
+function new_player()
+ return {
+   x=60, y=120, -- position
+   hitbox={x=2,y=1,h=7,w=5}, -- our hitbox
+   sx=0, sy=0,  -- movement speed
+   -- maybe set a left/right/top/bottom edge value when x or y change?
+   pix=1,
+   update = function(self)
+     self.x+=self.sx
+     self.y+=self.sy
+
+     for m in all(mushrooms) do
+       -- if this causes us to touch a mushroom, revert change
+       if touching(m,self) then
+         self.x-=self.sx
+         self.y-=self.sy
+         break
+       end
+     end
+
+     if (self.x > 121) self.x=121 -- right side
+     if (self.x < 0) self.x=0     -- left side
+     if (self.y > 120) self.y=120 -- lower bounds
+     if (self.y < 80) self.y=80   -- upper bounds
+
+   end,
+   draw = function(self)
      spr(self.pix,self.x,self.y)
    end,
  }
+end
+
+function populate_mushrooms()
+  field={}
+  count=40
+  -- done this way so as to test for overlapping mushrooms
+  while (count > 0) do
+    new = new_mushroom()
+    any_touching=false
+    for m in all(field) do
+      if touching(new,m) then
+        any_touching=true
+      end
+    end
+    if (any_touching==false) then
+      add(field, new)
+      count-=1
+    end
+  end
+  return field
+end
+
+function new_mushroom()
+  return {
+    x=flr(rnd(120)),
+    y=flr(rnd(120)),
+    hitbox={x=2,y=2,h=6,w=6}, -- our hitbox
+    pix={2, 3, 4, 5},
+    damage=1,
+    draw = function(self)
+      spr(self.pix[self.damage], self.x, self.y)
+    end,
+    hit = function(self)
+      self.damage+=1
+      if (damage > #self.pix) del(mushrooms, self)
+    end,
+  }
+end
+
+function touching(a,b)
+ if (not(a.hitbox)) stop("missing hitbox: a ")
+ if (not(b.hitbox)) stop("missing hitbox: b ")
+
+ atop = a.y+a.hitbox.y
+ btop = b.y+b.hitbox.y
+ abot = a.y+a.hitbox.y+a.hitbox.h
+ bbot = b.y+b.hitbox.y+b.hitbox.h
+ aleft = a.x+a.hitbox.x
+ bleft = b.x+b.hitbox.x
+ aright = a.x+a.hitbox.x+a.hitbox.w
+ bright = b.x+b.hitbox.x+b.hitbox.w
+
+ if (atop >= bbot) return false
+ if (btop >= abot) return false
+
+ if (aleft >= bright) return false
+ if (bleft >= aright) return false
+
+ return true
 end
 
 __gfx__

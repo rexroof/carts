@@ -23,6 +23,7 @@ function _init()
   frames=0
   mushrooms=populate_mushrooms()
   player=new_player()
+  dart=new_dart()
 end
 
 function _draw()
@@ -30,6 +31,7 @@ function _draw()
   for m in all(mushrooms) do
     m:draw()
   end
+  dart:draw()
   player:draw()
 end
 
@@ -40,26 +42,44 @@ function _update()
  if (btn(1)) player.sx=2
  if (btn(2)) player.sy=-2
  if (btn(3)) player.sy=2
+ if (btn(4)) dart:fire()
 
   frames+=1
   for s in all(sprites) do
     s:update()
   end
   player:update()
+  dart:update()
 end
 
 function new_dart() -- my projectile
  return {
    x=0, y=0, -- position
    sx=0, sy=0,  -- movement speed
+   docked=true,
+   fire = function(self)
+     if (self.docked) then
+       self.docked=false
+       self.sy=-4
+     end
+   end,
    update = function(self)
+     if (self.docked) then
+       -- center and slightly higher than player ship
+       self.x=player.x+3
+       self.y=player.y-1
+       self.sx=0
+       self.sy=0
+     end
+
      self.x+=self.sx
      self.y+=self.sy
 
-     if (self.x > 121) self.x=121 -- right side
-     if (self.x < 0) self.x=0     -- left side
-     if (self.y > 120) self.y=120 -- lower bounds
-     if (self.y < 80) self.y=80   -- upper bounds
+     -- test if dart goes off screen, testing every direction for sanity's sake?
+     if (self.x > 128) self.docked=true -- right side
+     if (self.x < 0) self.docked=true   -- left side
+     if (self.y > 128) self.docked=true -- lower bounds
+     if (self.y < 0) self.docked=true   -- upper bounds
    end,
    draw = function(self)
      line(self.x, self.y, self.x, self.y+4, 8) -- short red line

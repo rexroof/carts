@@ -44,19 +44,35 @@ function _update()
  if (btn(3)) player.sy=2
  if (btn(4)) dart:fire()
 
-  frames+=1
-  for s in all(sprites) do
-    s:update()
-  end
-  player:update()
-  dart:update()
-end
+ frames+=1
+ player:update()
+ dart:update()
+
+ -- check every mushroom for dart collision
+ if dart.docked == false then
+   for m in all(mushrooms) do
+     if touching(dart,m) then
+       m:hit()
+       dart:reload()
+     end
+   end
+ end
+
+end -- end _update
 
 function new_dart() -- my projectile
  return {
    x=0, y=0, -- position
    sx=0, sy=0,  -- movement speed
+   hitbox={x=0,y=0,h=1,w=1}, -- our hitbox
    docked=true,
+   reload = function(self)
+     self.docked=true
+     self.x=player.x+3
+     self.y=player.y-1
+     self.sx=0
+     self.sy=0
+   end,
    fire = function(self)
      if (self.docked) then
        self.docked=false
@@ -76,11 +92,11 @@ function new_dart() -- my projectile
      self.y+=self.sy
 
      -- test if dart goes off screen, testing every direction for sanity's sake?
-     if (self.x > 128) self.docked=true -- right side
-     if (self.x < 0) self.docked=true   -- left side
-     if (self.y > 128) self.docked=true -- lower bounds
-     if (self.y < 0) self.docked=true   -- upper bounds
-   end,
+     if (self.x > 128) self:reload()  -- right side
+     if (self.x < 0) self:reload()   -- left side
+     if (self.y > 128) self:reload() -- lower bounds
+     if (self.y < 0) self:reload()   -- upper bounds
+   end, -- end mushroom:update()
    draw = function(self)
      line(self.x, self.y, self.x, self.y+4, 8) -- short red line
    end,
@@ -143,7 +159,7 @@ function new_mushroom()
   return {
     x=flr(rnd(120)),
     y=flr(rnd(120)),
-    hitbox={x=2,y=2,h=6,w=6}, -- our hitbox
+    hitbox={x=2,y=2,h=5,w=6}, -- our hitbox
     pix={2, 3, 4, 5},
     damage=1,
     draw = function(self)
@@ -151,7 +167,7 @@ function new_mushroom()
     end,
     hit = function(self)
       self.damage+=1
-      if (damage > #self.pix) del(mushrooms, self)
+      if (self.damage > #self.pix) del(mushrooms, self)
     end,
   }
 end

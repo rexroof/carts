@@ -172,6 +172,19 @@ function new_mushroom()
   }
 end
 
+function new_segment() -- centipede body segment
+  local seg={
+    x=0,y=0, -- location
+    sx=0, sy=0, -- movement speed
+    hitbox={x=0,y=0,h=7,w=7}, -- our hitbox
+    headpix={13,14}, -- sprites for head segments
+    bodypix={15,16,17,18}, -- sprites for body segments
+    add_segments=0, -- if we're still growing, how many more segments to add
+    nextsegment=nil, -- link to our next body segment
+  }
+  return seg
+end
+
 function touching(a,b)
  if (not(a.hitbox)) stop("missing hitbox: a ")
  if (not(b.hitbox)) stop("missing hitbox: b ")

@@ -78,39 +78,39 @@ function new_dart() -- my projectile
    sx=0, sy=0,  -- movement speed
    hitbox={x=0,y=0,h=1,w=1}, -- our hitbox
    docked=true,
-   reload = function(self)
-     self.docked=true
-     self.x=player.x+3
-     self.y=player.y-1
-     self.sx=0
-     self.sy=0
+   reload = function(d)
+     d.docked=true
+     d.x=player.x+3
+     d.y=player.y-1
+     d.sx=0
+     d.sy=0
    end,
-   fire = function(self)
-     if (self.docked) then
-       self.docked=false
-       self.sy=-4
+   fire = function(d)
+     if (d.docked) then
+       d.docked=false
+       d.sy=-4
      end
    end,
-   update = function(self)
-     if (self.docked) then
+   update = function(d)
+     if (d.docked) then
        -- center and slightly higher than player ship
-       self.x=player.x+3
-       self.y=player.y-1
-       self.sx=0
-       self.sy=0
+       d.x=player.x+3
+       d.y=player.y-1
+       d.sx=0
+       d.sy=0
      end
 
-     self.x+=self.sx
-     self.y+=self.sy
+     d.x+=d.sx
+     d.y+=d.sy
 
      -- test if dart goes off screen, testing every direction for sanity's sake?
-     if (self.x > 128) self:reload()  -- right side
-     if (self.x < 0) self:reload()   -- left side
-     if (self.y > 128) self:reload() -- lower bounds
-     if (self.y < -2) self:reload()   -- upper bounds
+     if (d.x > 128) d:reload()  -- right side
+     if (d.x < 0) d:reload()   -- left side
+     if (d.y > 128) d:reload() -- lower bounds
+     if (d.y < -2) d:reload()   -- upper bounds
    end, -- end mushroom:update()
-   draw = function(self)
-     line(self.x, self.y, self.x, self.y+4, 8) -- short red line
+   draw = function(d)
+     line(d.x, d.y, d.x, d.y+4, 8) -- short red line
    end,
  }
 end
@@ -122,27 +122,27 @@ function new_player()
    sx=0, sy=0,  -- movement speed
    -- maybe set a left/right/top/bottom edge value when x or y change?
    pix=1,
-   update = function(self)
-     self.x+=self.sx
-     self.y+=self.sy
+   update = function(p)
+     p.x+=p.sx
+     p.y+=p.sy
 
      for m in all(mushrooms) do
        -- if this causes us to touch a mushroom, revert change
-       if touching(m,self) then
-         self.x-=self.sx
-         self.y-=self.sy
+       if touching(m,p) then
+         p.x-=p.sx
+         p.y-=p.sy
          break
        end
      end
 
-     if (self.x > 121) self.x=121 -- right side
-     if (self.x < 0) self.x=0     -- left side
-     if (self.y > 120) self.y=120 -- lower bounds
-     if (self.y < 88) self.y=88   -- upper bounds
+     if (p.x > 121) p.x=121 -- right side
+     if (p.x < 0) p.x=0     -- left side
+     if (p.y > 120) p.y=120 -- lower bounds
+     if (p.y < 88) p.y=88   -- upper bounds
 
    end,
-   draw = function(self)
-     spr(self.pix,self.x,self.y)
+   draw = function(p)
+     spr(p.pix,p.x,p.y)
    end,
  }
 end
@@ -174,13 +174,13 @@ function new_mushroom()
     hitbox={x=1,y=1,h=6,w=7}, -- our hitbox
     pix={2, 3, 4, 5},
     damage=1,
-    draw = function(self)
-      spr(self.pix[self.damage], self.x, self.y)
+    draw = function(m)
+      spr(m.pix[m.damage], m.x, m.y)
     end,
-    hit = function(self)
-      self.damage+=1
-      self.hitbox.h-=1
-      if (self.damage > #self.pix) del(mushrooms, self)
+    hit = function(m)
+      m.damage+=1
+      m.hitbox.h-=1
+      if (m.damage > #m.pix) del(mushrooms, m)
     end,
   }
 end
@@ -197,20 +197,20 @@ function new_segment(input) -- centipede body segment
     nextsegment=nil, -- link to our next body segment
     going_down=true,
     is_head=true,
-    update = function(self)
-      self.x+=self.sx
-      self.y+=self.sy
-      self.animation+=0.2
-      if (self.is_head==true) then
-        if (self.animation > #self.headpix+1) self.animation=1
+    update = function(c)
+      c.x+=c.sx
+      c.y+=c.sy
+      c.animation+=0.2
+      if (c.is_head==true) then
+        if (c.animation > #c.headpix+1) c.animation=1
       end
-      if (self.is_head==false) then
-        if (self.animation > #self.bodypix+1) self.animation=1
+      if (c.is_head==false) then
+        if (c.animation > #c.bodypix+1) c.animation=1
       end
     end,
-    draw = function(self)
-      if (self.is_head==true) spr(self.headpix[flr(self.animation)], self.x, self.y)
-      if (self.is_head==false) spr(self.bodypix[flr(self.animation)], self.x, self.y)
+    draw = function(c)
+      if (c.is_head==true) spr(c.headpix[flr(c.animation)], c.x, c.y)
+      if (c.is_head==false) spr(c.bodypix[flr(c.animation)], c.x, c.y)
     end,
   }
 

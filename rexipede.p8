@@ -16,14 +16,20 @@ __lua__
 -- check wikipedia for more details
 -- entire color palette shifts after clear
 -- lives are ships next to score
+--
+-- encode caterpilar movement in self:update() function.
+-- create a game settings global table to hold settings like player area?
+-- generate mushrooms in a grid, never in bottom row
 
 
 function _init()
   cls(0)
   frames=0
+  enemies={}
   mushrooms=populate_mushrooms()
   player=new_player()
   dart=new_dart()
+  add(enemies, new_segment())
 end
 
 function _draw()
@@ -33,6 +39,9 @@ function _draw()
   end
   dart:draw()
   player:draw()
+  for e in all(enemies) do
+    e:draw()
+  end
 end
 
 function _update()
@@ -47,6 +56,9 @@ function _update()
  frames+=1
  player:update()
  dart:update()
+ for e in all(enemies) do
+   e:update()
+ end
 
  -- check every mushroom for dart collision
  if dart.docked == false then
@@ -95,7 +107,7 @@ function new_dart() -- my projectile
      if (self.x > 128) self:reload()  -- right side
      if (self.x < 0) self:reload()   -- left side
      if (self.y > 128) self:reload() -- lower bounds
-     if (self.y < 0) self:reload()   -- upper bounds
+     if (self.y < -2) self:reload()   -- upper bounds
    end, -- end mushroom:update()
    draw = function(self)
      line(self.x, self.y, self.x, self.y+4, 8) -- short red line
@@ -126,7 +138,7 @@ function new_player()
      if (self.x > 121) self.x=121 -- right side
      if (self.x < 0) self.x=0     -- left side
      if (self.y > 120) self.y=120 -- lower bounds
-     if (self.y < 80) self.y=80   -- upper bounds
+     if (self.y < 88) self.y=88   -- upper bounds
 
    end,
    draw = function(self)
@@ -137,7 +149,7 @@ end
 
 function populate_mushrooms()
   field={}
-  count=40
+  count=30
   -- done this way so as to test for overlapping mushrooms
   while (count > 0) do
     new = new_mushroom()
@@ -157,9 +169,9 @@ end
 
 function new_mushroom()
   return {
-    x=flr(rnd(120)),
-    y=flr(rnd(120)),
-    hitbox={x=2,y=2,h=5,w=6}, -- our hitbox
+    x=flr(rnd(16))*8,
+    y=flr(rnd(15))*8,
+    hitbox={x=1,y=1,h=6,w=7}, -- our hitbox
     pix={2, 3, 4, 5},
     damage=1,
     draw = function(self)
@@ -167,21 +179,46 @@ function new_mushroom()
     end,
     hit = function(self)
       self.damage+=1
+      self.hitbox.h-=1
       if (self.damage > #self.pix) del(mushrooms, self)
     end,
   }
 end
 
-function new_segment() -- centipede body segment
+function new_segment(input) -- centipede body segment
   local seg={
-    x=0,y=0, -- location
+    x=60,y=0, -- location
     sx=0, sy=0, -- movement speed
     hitbox={x=0,y=0,h=7,w=7}, -- our hitbox
-    headpix={13,14}, -- sprites for head segments
-    bodypix={15,16,17,18}, -- sprites for body segments
+    headpix={14,15}, -- sprites for head segments
+    bodypix={16,17,18,19}, -- sprites for body segments
+    animation=1,
     add_segments=0, -- if we're still growing, how many more segments to add
     nextsegment=nil, -- link to our next body segment
+    going_down=true,
+    is_head=true,
+    update = function(self)
+      self.x+=self.sx
+      self.y+=self.sy
+      self.animation+=0.2
+      if (self.is_head==true) then
+        if (self.animation > #self.headpix+1) self.animation=1
+      end
+      if (self.is_head==false) then
+        if (self.animation > #self.bodypix+1) self.animation=1
+      end
+    end,
+    draw = function(self)
+      if (self.is_head==true) spr(self.headpix[flr(self.animation)], self.x, self.y)
+      if (self.is_head==false) spr(self.bodypix[flr(self.animation)], self.x, self.y)
+    end,
   }
+
+  -- copy input table over presets
+  for k,v in pairs(input) do
+    seg[k]=v
+  end
+
   return seg
 end
 

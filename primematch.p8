@@ -1,7 +1,7 @@
 pico-8 cartridge // http://www.pico-8.com
 version 42
 __lua__
--- 368 chickens
+-- 368 chickens  https://368chickens.com/
 -- 6x6 grid
 -- grid still needs alignment
 -- two tokens at a time
@@ -20,17 +20,24 @@ function _init()
   cls(12)
   score=(19 * 2^5)
   tick=0
-  wiggle_freq=0.1
-  wiggle_amp=0.2
+  wiggle_freq=0.8
+  wiggle_amp=0.3
   board=init_board()
   sprite_size=12
   sprites={ 1, 3, 5, 7 }
+
+  hpair = init_pair({active=true, vertical=false, location={x=1,y=1}})
+  vpair = init_pair({active=true, vertical=true, location={x=4,y=4}})
+
 end
 
 function _draw()
   cls(12)
-  board:draw()
+  -- board:draw()
   print(score, 100,1)
+
+  hpair:draw()
+  vpair:draw()
 end
 
 function _update()
@@ -42,6 +49,9 @@ function _update()
     board.spots[_x][_y]=flr(rnd(4)+1)
   end
 
+  hpair:update()
+  vpair:update()
+
 end
 
 function init_pair(input)
@@ -50,43 +60,43 @@ function init_pair(input)
     location={x=0,y=0},  -- our location on the board
     vertical=true, -- our orientation
     contents={
-      { char=0, x=0, y=0 },
-      { char=0, x=0, y=0 }
+      { char=flr(rnd(4)+1), x=0, y=0 },
+      { char=flr(rnd(4)+1), x=0, y=0 }
     },  -- the two types that are in our pair
     update = function(p)
       -- set sprites draw locations based on spot on the board
       -- first one is always at our location:
-      _tmploc=board.spotlocation(p.location.x, p.location.y)
+      _tmploc=board:spotlocation(p.location.x, p.location.y)
       p.contents[1].x=_tmploc.x
-      p.contents[1].x=_tmploc.y
+      p.contents[1].y=_tmploc.y
       -- second one varies depending on horiz/vert
       -- (we rely on movement to never allow us to be outside the board)
       if p.vertical then
-        _tmploc=board.spotlocation(p.location.x, p.location.y+1)
+        _tmploc=board:spotlocation(p.location.x, p.location.y+1)
       else
-        _tmploc=board.spotlocation(p.location.x+1, p.location.y)
+        _tmploc=board:spotlocation(p.location.x+1, p.location.y)
       end
       p.contents[2].x=_tmploc.x
-      p.contents[2].x=_tmploc.y
+      p.contents[2].y=_tmploc.y
 
       -- wiggle sprites if this pair is active (selected to be moved)
       if p.active then
-        _tmpx = 1 + cos(tick*wiggle_freq)*wiggle_amp;
-        _tmpy = 1 + sin(tick*wiggle_freq)*wiggle_amp;
+	_freq=0.5; _amp=0.05;
+        _tmpx = 1 + sin(tick*_amp)*_freq
+	_freq=0.9; _amp=0.15;
+        _tmpy = 1 + cos(tick*_amp)*_freq
 
-	p.contents[1].x=_tmpx
-	p.contents[1].y=_tmpy
-	p.contents[2].x=_tmpx
-	p.contents[2].y=_tmpy
+	p.contents[1].x+=_tmpx
+	p.contents[1].y+=_tmpy
+	p.contents[2].x+=_tmpx
+	p.contents[2].y+=_tmpy
       end
     end,
     draw = function(p)
       -- update function handles positioning
       for _, c in ipairs(p.contents) do
-	spr(c.x
+	place_sprite(c.char, c.x, c.y)
       end
-
-
     end,
     place = function(p,board) -- place the pair into the board
       -- test if we're allowed, exit if not
@@ -130,10 +140,10 @@ function init_board()
   end
 
   -- get {x,y} location of spot on board
-  _b.spotlocation = function(board, _x, _y)
+  _b.spotlocation = function(b, _x, _y)
     return {
-	x=((sprite_size+1)*(_x-1))+board.offset,
-	y=((sprite_size+1)*(_y-1))+board.offset
+	x=((sprite_size+1)*(_x-1))+b.offset,
+	y=((sprite_size+1)*(_y-1))+b.offset
     }
   end
 
@@ -155,7 +165,7 @@ function init_board()
 	if occupant == 0 then
           rectfill(loc.x,loc.y,x1,y1,1)
 	else
-	  place_sprite(sprites[occupant], loc.x, loc.y)
+	  place_sprite(occupant, loc.x, loc.y)
 	end
 
       end
@@ -165,14 +175,17 @@ function init_board()
   return _b
 end
 
-function place_sprite(_spr, _x, _y)
-  -- find our sprite positions on the board
+function place_sprite(_occ, _x, _y)
+  -- find our real sprite location from sprites table
+  _spr=sprites[_occ]
+
+  -- find our sprite positions in the sprite map
   sx, sy = (_spr % 16) * 8, (_spr \ 16) * 8
   -- shift by 1 because we have a frame on them
   sx+=1
   sy+=1
   -- display sprite on screen
-  sspr(sx,sy,sprite_size,sprite_size, _x,_y)
+  sspr(sx,sy,sprite_size,sprite_size,_x,_y)
 end
 
 __gfx__

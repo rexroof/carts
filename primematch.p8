@@ -18,40 +18,43 @@ __lua__
 
 function _init()
   cls(12)
-  score=(19 * 2^5)
   tick=0
-  wiggle_freq=0.8
-  wiggle_amp=0.3
-  board=init_board()
   sprite_size=12
   sprites={ 1, 3, 5, 7 }
 
-  hpair = init_pair({active=true, vertical=false, location={x=1,y=1}})
-  vpair = init_pair({active=true, vertical=true, location={x=4,y=4}})
-
+  reset_game()
 end
 
 function _draw()
   cls(12)
-  -- board:draw()
-  print(score, 100,1)
+  board:draw()
+  print(score, 100,1, 0)
 
-  hpair:draw()
-  vpair:draw()
+  -- hpair:draw()
+  -- vpair:draw()
 end
 
 function _update()
   tick+=1
 
-  if tick % 5 then
-    _x=flr(rnd(6))+1
-    _y=flr(rnd(6))+1
-    board.spots[_x][_y]=flr(rnd(4)+1)
-  end
+  -- fill board with random icons
+  -- if tick % 5 then
+  --  _x=flr(rnd(6))+1
+  --  _y=flr(rnd(6))+1
+  --  board.spots[_x][_y]=flr(rnd(4)+1)
+  -- end
 
   hpair:update()
   vpair:update()
+  board:update()
 
+end
+
+function reset_game()
+  score=(19 * 2^5)
+  board=init_board()
+  hpair = init_pair({active=true, vertical=false})
+  vpair = init_pair({active=true, vertical=true})
 end
 
 function init_pair(input)
@@ -161,6 +164,9 @@ function init_board()
         loc=board:spotlocation(x,y)
 	x1=loc.x+sprite_size
 	y1=loc.y+sprite_size
+
+	-- draw box around cell
+	rect(loc.x-1,loc.y-1,x1+1,y1+1,0)
 
 	if occupant == 0 then
           rectfill(loc.x,loc.y,x1,y1,1)

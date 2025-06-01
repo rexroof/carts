@@ -39,7 +39,6 @@ function new_segment(count, input)
       if seg.next then
 	seg.next:draw()
       end
-      print(remainder,64,64)
     end,
     update = function(seg)
       -- update ourselves
@@ -47,8 +46,17 @@ function new_segment(count, input)
       -- if horizontal is % 8, move left/right?
       -- toggle left/right?
       --
+      -- if moving vertically
+      if seg.dy~=0 then
+	-- if my height is an even factor 8
+	remainder=flr(seg.y)%8
+        if seg.y>0 and (remainder == 0) then
+	  -- switch direction to left/right
+	  seg.dy=0
+	  seg.dx=seg.speed*seg.direction
+	end
       -- if moving horizontally, check if close to edges
-      if seg.dx~=0 then
+      elseif seg.dx~=0 then
 	  if seg.x>119 or seg.x<2 then
 	    -- start moving down/vertically
 	    seg.dx=0
@@ -56,19 +64,6 @@ function new_segment(count, input)
 	    seg:change_direction()  -- change direction when next moving horizontally
 	  end
       end
-      -- if moving vertically
-      if seg.dy>0 then
-	-- if my height is an even factor 8
-	remainder=flr(seg.y)%8
-	printh('debug: remainder='..remainder..' seg.y='..seg.y, 'worm.log')
-        if seg.y>0 and (remainder == 0) then
-	  -- switch direction to left/right
-	  seg.dy=0
-	  seg.dx=seg.speed*seg.direction
-	  printh('updated motion: seg.dy='..seg.dy..' seg.dx='..seg.dx, 'worm.log')
-	end
-      end
-
       seg.x+=seg.dx
       seg.y+=seg.dy
       -- update next segment
